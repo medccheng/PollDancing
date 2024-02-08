@@ -2,18 +2,20 @@
 @{
     ViewData["Title"] = "Home Page";
 }
-<div class="text-center">
+<div class="container-fluid">
     <h2 class="display-4">Congress Members</h2>
 
     <table id="memberTable" class="display">
         <thead>
             <tr>
                 <th>Id</th>
+                <th>Image</th>
                 <th>Name</th>
                 <th>Type</th>
                 <th>State</th>
                 <th>District</th>
-                <th>URL</th>
+                <th>Office</th>
+                @* <th>URL</th> *@
             </tr>
         </thead>
     </table>
@@ -21,18 +23,29 @@
 <script>
     $(document).ready(function () {
         $('#memberTable').DataTable({
+            "processing": true, // Enable processing indicator
+            "serverSide": true, // Enable server-side processing
             "ajax": {
                 "url": "/Home/GetMembers",
                 "dataType": "json",
-                "dataSrc": ""
+                "type":"GET"
+                //"dataSrc": "data",                
             },
             "columns": [
                 { "data": "id" },
                 { "data": "name" },
+                {
+                    "data": "image",
+                    "render": function (data, type, row) 
+                    {
+                        return '<img src="' + data + '" alt="' + row.name + '" style="width:50px;height:auto;"/>';
+                    }
+                },
                 { "data": "type" },
                 { "data": "state" },
                 { "data": "district" },
-                { "data": "url" },
+                { "data": "office" },
+                //{ "data": "url" },
             ]
         });
     });

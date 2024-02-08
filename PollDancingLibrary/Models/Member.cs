@@ -20,12 +20,12 @@ namespace PollDancingLibrary.Models
         [Required]
         [StringLength(10)]
         [JsonPropertyName("bioguideId")]
-        public string BioguideId { get; set; }
+        public string? BioguideId { get; set; }
 
         [Required]
         [StringLength(100)]
         [JsonPropertyName("state")]
-        public string State { get; set; }
+        public string? State { get; set; }
 
         [JsonPropertyName("district")]
         public int? District { get; set; } // Optional for senators
@@ -50,12 +50,22 @@ namespace PollDancingLibrary.Models
         [Required]
         [StringLength(200)]
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
+
+
+        [ForeignKey("AddressInformation")]
+        public int? AddressInformationId { get; set; }
+
+        [JsonPropertyName("addressInformation")]
+        public virtual AddressInformation? AddressInformation { get; set; }
+
+
 
         [JsonPropertyName("terms")]
-        public virtual List<Term> Terms { get; set; }
-        
+        public virtual ICollection<Term> Terms { get; set; }        
 
+        public virtual ICollection<SponsoredLegislation> SponsoredLegislations { get; set; }
 
+        public virtual ICollection<CosponsoredLegislation> CosponsoredLegislations { get; set; }
     }
 }

@@ -21,8 +21,23 @@ namespace PollDancingLibrary.Models
         public int? EndYear { get; set; } // Optional for ongoing terms
 
         [StringLength(50)]
-        [JsonPropertyName("chamber")]
-        public string? Chamber { get; set; }
+        [JsonPropertyName("memberType")]
+        public string? MemberType { get; set; }
+
+        [StringLength(50)]
+        [JsonPropertyName("stateName")]
+        public string? StateName { get; set; }
+
+        [StringLength(50)]
+        [JsonPropertyName("stateCode")]
+        public string? StateCode { get; set; }
+
+        [StringLength(50)]
+        [JsonPropertyName("congress")]
+        public int Congress { get; set; } = 0;
+
+
+
 
         [ForeignKey("Member")]
         public int MemberId { get; set; }

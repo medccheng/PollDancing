@@ -25,28 +25,56 @@ namespace PollDancingWeb.Controllers
         }
 
         //write api to get all members
-        public async Task<IActionResult> GetMembersAsync()
+        public async Task<IActionResult> GetMembersAsync(int draw = 1, int length = 10)
         {
-            var members = await _congressDbContext.Members.ToListAsync();
+            // Calculate the number of records to skip
+            int skip = (draw - 1) * length;
+
+            // Get total number of records
+            int recordsTotal = await _congressDbContext.Members.CountAsync();
+
+            if (skip > recordsTotal)
+            {
+                   skip = 0;
+                   draw= 1;
+            }
+
+            // Fetch paginated data
+            var members = await _congressDbContext.Members
+                                .Include(x => x.AddressInformation)
+                                .Include(x => x.Depiction)
+                                .OrderBy(m => m.Id) // Assuming you are ordering by Id or adjust as needed
+                                .Skip(skip)
+                                .Take(length)
+                                .ToListAsync();
+
             var data = new List<object>();
             foreach (var member in members)
             {
-                member.Terms = await _congressDbContext.Terms.Where(t => t.MemberId == member.Id).ToListAsync();
+                var terms = await _congressDbContext.Terms
+                                .Where(t => t.MemberId == member.Id)
+                                .ToListAsync();
+
                 data.Add(new
                 {
-                    Id = member.Id,
-                    BioguideId = member.BioguideId,
-                    Name = member.Name,
-                    State = member.State,
-                    District = member.District,
-                    PartyName = member.PartyName,
-                    Url = member.Url,
+                    member.Id,
+                    member.BioguideId,
+                    member.Name,
+                    member.State,
+                    member.District,
+                    member.PartyName,
+                    //member.Url,
+                    Office = member.AddressInformation?.OfficeAddress ?? "",
                     UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd"),
-                    Type = member.Terms?.FirstOrDefault()?.Chamber ?? "",
+                    Type = terms.FirstOrDefault()?.MemberType ?? "",
+                    Image = member.Depiction?.ImageUrl ?? "",
                 });
             }
-            
-            return Json(data);
+
+            var recordsFiltered = recordsTotal;
+
+            // Return the data and pagination info
+            return Json(new { data, draw, recordsTotal, recordsFiltered });
         }
 
         public IActionResult Privacy()
