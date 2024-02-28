@@ -3,6 +3,7 @@ using Azure.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollDancingLibrary.Data;
+using PollDancingLibrary.Models;
 using PollDancingWeb.Models;
 using System.Diagnostics;
 
@@ -25,10 +26,14 @@ namespace PollDancingWeb.Controllers
         }
 
         //write api to get all members
-        public async Task<IActionResult> GetMembersAsync(int draw = 1, int length = 10)
+        public async Task<IActionResult> GetMembersAsync(int draw = 1, int length = 10, int start = 1, dynamic? search=null)
         {
             // Calculate the number of records to skip
-            int skip = (draw - 1) * length;
+            int skip = start;
+            
+            //get the value property from the search object
+            //var searchValue = search?.value;
+
 
             // Get total number of records
             int recordsTotal = await _congressDbContext.Members.CountAsync();
@@ -36,7 +41,6 @@ namespace PollDancingWeb.Controllers
             if (skip > recordsTotal)
             {
                    skip = 0;
-                   draw= 1;
             }
 
             // Fetch paginated data
@@ -53,7 +57,9 @@ namespace PollDancingWeb.Controllers
             {
                 var terms = await _congressDbContext.Terms
                                 .Where(t => t.MemberId == member.Id)
+                                .OrderByDescending(t => t.EndYear)
                                 .ToListAsync();
+                var sponsoredLegislations = await _congressDbContext.SponsoredLegislations.Where(s => s.MemberId == member.Id).ToListAsync();
 
                 data.Add(new
                 {
@@ -68,6 +74,7 @@ namespace PollDancingWeb.Controllers
                     UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd"),
                     Type = terms.FirstOrDefault()?.MemberType ?? "",
                     Image = member.Depiction?.ImageUrl ?? "",
+                    SponsoredLegislations = sponsoredLegislations?.Count ?? 0,
                 });
             }
 
