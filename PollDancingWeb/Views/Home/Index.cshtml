@@ -11,11 +11,12 @@
                 <th>Id</th>
                 <th>Image</th>
                 <th>Name</th>
+                <th>Party</th>
                 <th>Type</th>
                 <th>State</th>
                 <th>District</th>
                 <th>Office</th>
-                @* <th>URL</th> *@
+                <th>Sponsored Bills</th>
             </tr>
         </thead>
     </table>
@@ -34,6 +35,7 @@
             "columns": [
                 { "data": "id" },
                 { "data": "name" },
+                { "data": "partyName" },
                 {
                     "data": "image",
                     "render": function (data, type, row) 
@@ -45,7 +47,7 @@
                 { "data": "state" },
                 { "data": "district" },
                 { "data": "office" },
-                //{ "data": "url" },
+                { "data": "sponsoredLegislations" },
             ]
         });
     });

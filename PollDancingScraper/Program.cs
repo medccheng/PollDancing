@@ -7,6 +7,8 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
+using PollDancingScraper.JModels;
+using static System.Net.WebRequestMethods;
 
 class Program
 {
@@ -24,16 +26,13 @@ class Program
 
             using (var context = new CongressDbContext(optionsBuilder.Options))
             {
-                Console.WriteLine("Saving all members data.");
-                await SaveMember(context);
+                Console.WriteLine("Saving all legislations data.");
+                await SaveLegislations(context);
 
-                //int i = 0;
-                foreach (var member in context.Members)
+                foreach (var legislation in context.Legislations)
                 {
-                    Console.WriteLine(string.Format("Saving details for member {0}", member.Name));
-                    await SaveMemberDetails(context, member.BioguideId);
-                    //i++;
-                    //if (i > 5) break;
+                    Console.WriteLine(string.Format("Saving details for legislation {0}", legislation.Title));
+                    await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
                 }
 
                 await context.SaveChangesAsync();
@@ -49,12 +48,94 @@ class Program
         }
     }
 
+    private async static Task SaveLegislationDetails(CongressDbContext context, string? billNumber, int congressNumber, string? billType)
+    {
+        string uri = $"https://api.congress.gov/v3/bill/{congressNumber}/{billType}/{billNumber}?api_key={apiKey}";
+
+        var response = await client.GetStringAsync(uri);
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var root = JsonSerializer.Deserialize<JLegislationDetailsApiRoot>(response, options);
+
+        var existingLegislation = await context.Legislations.FirstOrDefaultAsync(m => m.Number == billNumber);
+
+        if (existingLegislation != null && root?.Bill != null)
+        {
+            var bill = root.Bill;
+            //create a List of Term using the JTerm data from member.Terms
+            foreach (var jmember in bill.Sponsors)
+            {
+                var member = context.Members.FirstOrDefault(m => m.BioguideId == jmember.BioguideId);
+                if (member != null)
+                {
+                    var sponsoredLegislation = context.SponsoredLegislations.FirstOrDefault(t => t.LegislationId == existingLegislation.Id && t.MemberId == member.Id);
+                    if (sponsoredLegislation == null)
+                    {
+                        context.SponsoredLegislations.Add(new SponsoredLegislation()
+                        {
+                            MemberId = member.Id
+                            ,
+                            LegislationId = existingLegislation.Id
+                        });
+                    }
+                }                
+            }
+        }
+    }
+
+    private static async Task SaveLegislations(CongressDbContext context)
+    {
+        string uri = $"https://api.congress.gov/v3/bill?limit=250&api_key={apiKey}";
+        var response = await client.GetStringAsync(uri);
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var legislationsRoot = JsonSerializer.Deserialize<JLegislationApiRoot>(response, options);
+
+        foreach (var bill in legislationsRoot.Bills)
+        {
+            var existingBill = await context.Legislations.FirstOrDefaultAsync(m => m.Number == bill.Number && m.Congress == bill.Congress);
+
+            if (existingBill == null)
+            {
+                context.Legislations.Add(new Legislation()
+                {
+                    Number = bill.Number
+                    ,
+                    Congress = bill.Congress
+                    ,
+                    OriginChamber = bill.OriginChamber
+                    ,
+                    OriginChamberCode = bill.OriginChamberCode
+                    ,
+                    Title = bill.Title
+                    ,
+                    Type = bill.Type
+                    ,
+                    UpdateDate = bill.UpdateDate
+                    ,
+                    Url = bill.Url
+                    ,
+                    IntroducedDate = bill.IntroducedDate
+
+                });
+            }
+            //else
+            //{
+            //    // Manually set each property you wish to update
+            //    existingMember.District = member.District;
+            //    existingMember.PartyName = member.PartyName;
+            //    existingMember.State = member.State;
+            //    existingMember.UpdateDate = member.UpdateDate;
+            //    existingMember.Url = member.Url;
+            //    context.Members.Update(existingMember);
+            //}
+        }
+    }
+
     /// <summary>
     /// Save member data to the database
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    private static async Task SaveMember(CongressDbContext context)
+    private static async Task SaveMembers(CongressDbContext context)
     {
         string uri = $"https://api.congress.gov/v3/member?limit=250&api_key={apiKey}";
         var response = await client.GetStringAsync(uri);
@@ -165,125 +246,6 @@ class Program
 }
 
 
-
-
-
-
-
-public class JMembersApiRoot
-{
-    [JsonPropertyName("members")]
-    public List<JMember> Members { get; set; }
-}
-
-
-public class JMember
-{
-    [JsonPropertyName("bioguideId")]
-    public string BioguideId { get; set; }
-
-    [JsonPropertyName("state")]
-    public string? State { get; set; }
-
-    [JsonPropertyName("district")]
-    public int? District { get; set; } // Optional for senators
-
-    [JsonPropertyName("partyName")]
-    public string? PartyName { get; set; }
-
-    [JsonPropertyName("url")]
-    public string? Url { get; set; }
-
-    [JsonPropertyName("depiction")]
-    public virtual Depiction? Depiction { get; set; }
-
-    [JsonPropertyName("updateDate")]
-    public DateTime? UpdateDate { get; set; }
-
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
-
-    //[JsonPropertyName("terms")]
-    //public List<Term> Terms { get; set; }
-
-    //[JsonPropertyName("addressInformation")]
-    //public AddressInformation AddressInformation { get; set; }
-}
-
-public class JMemberDetailsApiRoot
-{
-    [JsonPropertyName("member")]
-    public JMemberDetails Member { get; set; }
-}
-
-public class JMemberDetails
-{
-    [JsonPropertyName("bioguideId")]
-    public string BioguideId { get; set; }
-
-    [JsonPropertyName("state")]
-    public string? State { get; set; }
-
-    [JsonPropertyName("district")]
-    public int? District { get; set; } // Optional for senators
-
-    [JsonPropertyName("partyName")]
-    public string? PartyName { get; set; }
-
-    [JsonPropertyName("url")]
-    public string? Url { get; set; }
-
-    [JsonPropertyName("depiction")]
-    public virtual Depiction? Depiction { get; set; }
-
-    [JsonPropertyName("updateDate")]
-    public DateTime? UpdateDate { get; set; }
-
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
-    [JsonPropertyName("terms")]
-    public List<JTerm> Terms { get; set; }
-
-    [JsonPropertyName("addressInformation")]
-    public JAddressInformation AddressInformation { get; set; }
-}
-
-
-
-public class JTerm
-{
-
-    [JsonPropertyName("startYear")]
-    public int? StartYear { get; set; }
-
-    [JsonPropertyName("endYear")]
-
-    public int? EndYear { get; set; } // Optional for ongoing terms
-
-    [StringLength(50)]
-    [JsonPropertyName("memberType")]
-    public string? MemberType { get; set; }
-
-    [StringLength(50)]
-    [JsonPropertyName("stateName")]
-    public string? StateName { get; set; }
-
-    [StringLength(50)]
-    [JsonPropertyName("stateCode")]
-    public string? StateCode { get; set; }
-
-    [JsonPropertyName("congress")]
-    public int Congress { get; set; }
-
-    [ForeignKey("JMember")]
-    public int MemberId { get; set; }
-
-    //public virtual JMember Member { get; set; }
-}
-
-
 //public class JDepiction
 //{
 
@@ -298,26 +260,3 @@ public class JTerm
 //    public virtual JMember Member { get; set; }
 //}
 
-
-public class JAddressInformation
-{
-    [JsonPropertyName("officeAddress")]
-    public string OfficeAddress { get; set; }
-
-    [JsonPropertyName("city")]
-    public string City { get; set; }
-
-    [JsonPropertyName("district")]
-    public string District { get; set; }
-
-    [JsonPropertyName("zipCode")]
-    public int ZipCode { get; set; }
-
-    [JsonPropertyName("phoneNumber")]
-    public string PhoneNumber { get; set; }
-
-
-    //[ForeignKey("JMember")]
-    //public int MemberId { get; set; }
-    //public virtual JMember Member { get; set; }
-}
