@@ -17,37 +17,47 @@
                 <th>District</th>
                 <th>Office</th>
                 <th>Sponsored Bills</th>
+                <th></th>
             </tr>
         </thead>
     </table>
 </div>
 <script>
     $(document).ready(function () {
+        // Define the base URL for the details action
+        var detailsBaseUrl = '@Url.Action("GetDetails", "Home")';
+
         $('#memberTable').DataTable({
             "processing": true, // Enable processing indicator
             "serverSide": true, // Enable server-side processing
             "ajax": {
                 "url": "/Home/GetMembers",
                 "dataType": "json",
-                "type":"GET"
-                //"dataSrc": "data",                
+                "type": "GET"
             },
             "columns": [
                 { "data": "id" },
-                { "data": "name" },
-                { "data": "partyName" },
                 {
                     "data": "image",
-                    "render": function (data, type, row) 
-                    {
+                    "render": function (data, type, row) {
                         return '<img src="' + data + '" alt="' + row.name + '" style="width:50px;height:auto;"/>';
                     }
                 },
+                { "data": "name" },
+                { "data": "partyName" },
+                
                 { "data": "type" },
                 { "data": "state" },
                 { "data": "district" },
                 { "data": "office" },
                 { "data": "sponsoredLegislations" },
+                {
+                    "data": "id",
+                    "render": function (data, type, row) {
+                        // Use the base URL and append the id to create the detail link
+                        return '<a href="' + detailsBaseUrl + '/' + data + '">View Details</a>';
+                    }
+                }
             ]
         });
     });

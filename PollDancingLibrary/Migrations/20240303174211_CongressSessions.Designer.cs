@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PollDancingLibrary.Data;
 
@@ -11,9 +12,11 @@ using PollDancingLibrary.Data;
 namespace PollDancingLibrary.Migrations
 {
     [DbContext(typeof(CongressDbContext))]
-    partial class CongressDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240303174211_CongressSessions")]
+    partial class CongressSessions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -102,10 +105,6 @@ namespace PollDancingLibrary.Migrations
                     b.Property<string>("EndYear")
                         .HasColumnType("nvarchar(max)")
                         .HasAnnotation("Relational:JsonPropertyName", "endYear");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("Relational:JsonPropertyName", "name");
 
                     b.Property<int>("Number")
                         .HasMaxLength(50)

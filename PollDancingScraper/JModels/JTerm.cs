@@ -34,9 +34,11 @@ namespace PollDancingScraper.JModels
         [JsonPropertyName("congress")]
         public int Congress { get; set; }
 
-        [ForeignKey("JMember")]
-        public int MemberId { get; set; }
 
-        //public virtual JMember Member { get; set; }
+
+        ////[ForeignKey("JMember")]
+        ////public int MemberId { get; set; }
+
+        //public virtual JCongress Congress { get; set; }
     }
 }

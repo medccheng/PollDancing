@@ -1,14 +1,4 @@
 {
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=DESKTOP-LSNPVK6\\SQLEXPRESS;Database=CongressDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
-  },
-  "Logging": {
-    "LogLevel": {
-      "Default": "Debug",
-      "Microsoft": "Information",
-      "Microsoft.Hosting.Lifetime": "Information"
-    }
-  },
   "NLog": {
     "autoReload": true,
     "throwExceptions": false,

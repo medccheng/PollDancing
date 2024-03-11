@@ -25,6 +25,11 @@ namespace PollDancingLibrary.Data
         public DbSet<SponsoredLegislation> SponsoredLegislations { get; set; }
 
         public DbSet<CosponsoredLegislation> CosponsoredLegislations { get; set; }
+
+        public DbSet<Congress> Congresses { get; set; }
+
+        public DbSet<Session> Sessions { get; set; }
+
         public CongressDbContext(DbContextOptions<CongressDbContext> options)
         : base(options)
         {
@@ -32,8 +37,10 @@ namespace PollDancingLibrary.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            
+            optionsBuilder.UseLazyLoadingProxies();
         }
+    
+    
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,0 +1,41 @@
+﻿@model PollDancingWeb.Models.MemberViewModel
+@{
+    ViewData["Title"] = "MemberDetails";
+}
+
+<h1>@Model.Name</h1>
+<h2>@Model.PartyName - @Model.State in @Model.District</h2>
+@if (Model.Depiction != null)
+{
+    <div>
+        <h2>Depiction</h2>
+        <img src="@Model.Depiction.ImageUrl" alt="Image of @Model.Name">
+        <p>Attribution: @Model.Depiction.Attribution</p>
+    </div>
+}
+
+@if (Model.AddressInformation != null)
+{
+    <div>
+        <h2>Address Information</h2>
+        <p>@Model.AddressInformation.OfficeAddress, @Model.AddressInformation.City, @Model.AddressInformation.District, @Model.AddressInformation.ZipCode</p>
+        <p>Phone: @Model.AddressInformation.PhoneNumber</p>
+    </div>
+}
+
+@if (Model.Terms != null && Model.Terms.Any())
+{
+    <div>
+        <h2>Terms</h2>
+        @foreach (var term in Model.Terms)
+        {
+            <div>
+                <p>From @term.StartYear to @(term.EndYear.HasValue ? term.EndYear.ToString() : "Present") - @term.MemberType in @term.StateName (@term.StateCode)</p>
+                <p>Congress: @term.Congress.Name (@term.Congress.StartYear - @term.Congress.EndYear)</p>
+            </div>
+        }
+    </div>
+}
+
+
+
