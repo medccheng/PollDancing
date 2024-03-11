@@ -3,9 +3,10 @@ using Azure.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollDancingLibrary.Data;
+using PollDancingLibrary.Models;
 using PollDancingWeb.Models;
 using System.Diagnostics;
-
+using NLog;
 
 namespace PollDancingWeb.Controllers
 {
@@ -25,56 +26,122 @@ namespace PollDancingWeb.Controllers
         }
 
         //write api to get all members
-        public async Task<IActionResult> GetMembersAsync(int draw = 1, int length = 10)
+        public async Task<IActionResult> GetMembersAsync(int draw = 1, int length = 10, int start = 1, dynamic? search=null)
         {
-            // Calculate the number of records to skip
-            int skip = (draw - 1) * length;
-
-            // Get total number of records
-            int recordsTotal = await _congressDbContext.Members.CountAsync();
-
-            if (skip > recordsTotal)
+            try
             {
-                   skip = 0;
-                   draw= 1;
-            }
+                _logger.LogDebug("Get members list.");
+                
+                // Calculate the number of records to skip
+                int skip = start;
+                //int latestCongressNumber = await _congressDbContext.Congresses.MaxAsync(c => c.Number);
+                var activeMembers = await _congressDbContext.Members
+                                    .Include(m => m.Terms)
+                                    .Where(m => m.Terms.Any(t => t.EndYear == null || t.EndYear >= DateTime.Now.Year))
+                                    .OrderBy(m => m.Id) // Assuming you are ordering by Id or adjust as needed
+                                    .Skip(skip)
+                                    .Take(length)
+                                    .ToListAsync();
 
-            // Fetch paginated data
-            var members = await _congressDbContext.Members
-                                .Include(x => x.AddressInformation)
-                                .Include(x => x.Depiction)
-                                .OrderBy(m => m.Id) // Assuming you are ordering by Id or adjust as needed
-                                .Skip(skip)
-                                .Take(length)
-                                .ToListAsync();
 
-            var data = new List<object>();
-            foreach (var member in members)
-            {
-                var terms = await _congressDbContext.Terms
-                                .Where(t => t.MemberId == member.Id)
-                                .ToListAsync();
+                // Get total number of records
+                var allActiveMembers = await _congressDbContext.Members.Include(m=>m.Terms).Where(m => m.Terms.Any(t => t.EndYear == null || t.EndYear >= DateTime.Now.Year)).ToListAsync();
+                int recordsTotal = allActiveMembers.Count;
+                             
 
-                data.Add(new
+                var data = new List<object>();
+                foreach (var member in activeMembers)
                 {
-                    member.Id,
-                    member.BioguideId,
-                    member.Name,
-                    member.State,
-                    member.District,
-                    member.PartyName,
-                    //member.Url,
-                    Office = member.AddressInformation?.OfficeAddress ?? "",
-                    UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd"),
-                    Type = terms.FirstOrDefault()?.MemberType ?? "",
-                    Image = member.Depiction?.ImageUrl ?? "",
-                });
+                    var sponsoredLegislations = await _congressDbContext.SponsoredLegislations.Where(s => s.MemberId == member.Id).ToListAsync();
+
+                    data.Add(new
+                    {
+                        Id =member.Id,
+                        BioguideId = member.BioguideId ?? "",
+                        Name = member.Name ?? "",
+                        State = member.State ?? "",
+                        District =member.District ?? 0,
+                        PartyName= member.PartyName ?? "",
+                        Office = member.AddressInformation?.OfficeAddress ?? "",
+                        UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd") ?? "",
+                        Type = member.Terms.OrderByDescending(t => t.EndYear)?.FirstOrDefault().MemberType ?? "",
+                        Image = member.Depiction?.ImageUrl ?? "",
+                        SponsoredLegislations = sponsoredLegislations?.Count ?? 0,
+                    });
+                }
+
+                var recordsFiltered = recordsTotal;
+
+                // Return the data and pagination info
+                return Json(new { data, draw, recordsTotal, recordsFiltered });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        public IActionResult GetDetails(int id)
+        {
+            var member = _congressDbContext.Members
+                .Include(m => m.Terms)
+                .Include(m => m.AddressInformation)
+                .Include(m => m.Depiction)
+                .Include(m => m.Terms)
+                .Include(m => m.SponsoredLegislations)
+                .FirstOrDefault(m => m.Id == id);
+
+            var terms = member.Terms.OrderByDescending(t => t.EndYear).FirstOrDefault();
+            List<TermViewModel> termsViewModel = new List<TermViewModel>();
+            foreach (var term in member.Terms)
+            {
+               termsViewModel.Add(new TermViewModel()
+               {
+                   StartYear = (int)term.StartYear,
+                   EndYear = term.EndYear,
+                   MemberType = term.MemberType,
+                   CongressId = (int)term.CongressId,                   
+                   StateName = term.StateName,
+                   StateCode = term.StateCode,
+                   Congress = new CongressViewModel()
+                   {
+                       Id = term.Congress.Id,
+                       StartYear = term.Congress.StartYear,
+                       EndYear = term.Congress.EndYear,
+                       Number = term.Congress.Number,
+                       Name = term.Congress.Name,
+                   }
+               });
             }
 
-            var recordsFiltered = recordsTotal;
+            MemberViewModel result = new MemberViewModel()
+            {
+                BioguideId = member.BioguideId ?? "",
+                Name = member.Name ?? "",
+                State = member.State ?? "",
+                District = member.District.ToString(),
+                PartyName = member.PartyName ?? "",
+                UpdateDate = (DateTime)member.UpdateDate,
+                AddressInformation = new AddressInformationViewModel()
+                { 
+                    MemberId = member.AddressInformation.MemberId,
+                    OfficeAddress = member.AddressInformation.OfficeAddress,
+                    City = member.AddressInformation.City,
+                    PhoneNumber = member.AddressInformation.PhoneNumber,
+                    District = member.AddressInformation.District,
+                },
+                Depiction = new DepictionViewModel()
+                {
+                    MemberId = member.Depiction.MemberId,
+                    ImageUrl = member.Depiction.ImageUrl,
+                    Attribution = member.Depiction.Attribution,
+                },
+                Terms = termsViewModel,
+                //SponsoredLegislations = member.SponsoredLegislations
+            };
+            
 
-            // Return the data and pagination info
-            return Json(new { data, draw, recordsTotal, recordsFiltered });
+            return View("MemberDetails", result);
         }
 
         public IActionResult Privacy()

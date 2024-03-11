@@ -7,6 +7,10 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
+using PollDancingScraper.JModels;
+using static System.Net.WebRequestMethods;
+using static System.Net.Mime.MediaTypeNames;
+using System.Text.RegularExpressions;
 
 class Program
 {
@@ -24,17 +28,28 @@ class Program
 
             using (var context = new CongressDbContext(optionsBuilder.Options))
             {
-                Console.WriteLine("Saving all members data.");
-                await SaveMember(context);
+
+                //await SaveCongresses(context);
+
+                //await SaveMembers(context);
 
                 //int i = 0;
-                foreach (var member in context.Members)
+                foreach (var member in context.Members
+    .Include(m => m.Terms)
+    .Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023"))
+    .Take(200))
                 {
-                    Console.WriteLine(string.Format("Saving details for member {0}", member.Name));
                     await SaveMemberDetails(context, member.BioguideId);
-                    //i++;
-                    //if (i > 5) break;
                 }
+
+                //Console.WriteLine("Saving all legislations data.");
+                //await SaveLegislations(context);
+
+                //foreach (var legislation in context.Legislations)
+                //{
+                //    //Console.WriteLine(string.Format("Saving details for legislation {0}", legislation.Title));
+                //    await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
+                //}
 
                 await context.SaveChangesAsync();
             }
@@ -49,53 +64,175 @@ class Program
         }
     }
 
+    private static async Task SaveCongresses(CongressDbContext context)
+    {
+        Console.WriteLine("Saving all congresses list.");
+        string uri = $"https://api.congress.gov/v3/congress?limit=250&api_key={apiKey}";
+        var response = await client.GetStringAsync(uri);
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var congressesRoot = JsonSerializer.Deserialize<JCongressesApiRoot>(response, options);
+
+        foreach (var congress in congressesRoot.Congresses)
+        {
+            string pattern = @"\d+";
+            Match match = Regex.Match(congress.Name, pattern);
+            int id = 0;
+            var existingCongress = await context.Congresses.FirstOrDefaultAsync(c => c.Number == (int.TryParse(match.Value, out id) ? id : 0));
+
+            if (existingCongress == null)
+            {
+                context.Congresses.Add(new Congress()
+                {
+                    Name = congress.Name
+                    ,
+                    StartYear = congress.StartYear
+                    ,
+                    EndYear = congress.EndYear
+                    ,
+                    Number = (int.TryParse(match.Value, out id) ? id : 0)
+                });
+            }
+            else
+            {
+                //existingCongress.StartYear = congress.StartYear;
+                //existingCongress.EndYear = congress.EndYear;
+                existingCongress.Number = (int.TryParse(match.Value, out id) ? id : 0);
+                existingCongress.Name = congress.Name;
+                context.Congresses.Update(existingCongress);
+            }
+        }
+    }
+
+    private async static Task SaveLegislationDetails(CongressDbContext context, string? billNumber, int congressNumber, string? billType)
+    {
+        Console.WriteLine($"Saving legislation detail for BillNumber: {billNumber}");
+        string uri = $"https://api.congress.gov/v3/bill/{congressNumber}/{billType}/{billNumber}?api_key={apiKey}";
+
+        var response = await client.GetStringAsync(uri);
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var root = JsonSerializer.Deserialize<JLegislationDetailsApiRoot>(response, options);
+
+        var existingLegislation = await context.Legislations.FirstOrDefaultAsync(m => m.Number == billNumber);
+
+        if (existingLegislation != null && root?.Bill != null)
+        {
+            var bill = root.Bill;
+            //create a List of Term using the JTerm data from member.Terms
+            foreach (var jmember in bill.Sponsors)
+            {
+                var member = context.Members.FirstOrDefault(m => m.BioguideId == jmember.BioguideId);
+                if (member != null)
+                {
+                    var sponsoredLegislation = context.SponsoredLegislations.FirstOrDefault(t => t.LegislationId == existingLegislation.Id && t.MemberId == member.Id);
+                    if (sponsoredLegislation == null)
+                    {
+                        context.SponsoredLegislations.Add(new SponsoredLegislation()
+                        {
+                            MemberId = member.Id
+                            ,
+                            LegislationId = existingLegislation.Id
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    private static async Task SaveLegislations(CongressDbContext context)
+    {
+        Console.WriteLine("Saving all legislations list.");
+
+        var latestCongresses = await context.Congresses.OrderByDescending(c => c.EndYear).Select(c => c.Number).Take(3).ToListAsync();
+
+        foreach (var congress in latestCongresses)
+        {
+            string uri = $"https://api.congress.gov/v3/bill/{congress}?api_key={apiKey}";
+            var response = await client.GetStringAsync(uri);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var legislationsRoot = JsonSerializer.Deserialize<JLegislationApiRoot>(response, options);
+
+            foreach (var bill in legislationsRoot.Bills)
+            {
+                var existingBill = await context.Legislations.FirstOrDefaultAsync(m => m.Number == bill.Number && m.Congress == bill.Congress);
+
+                if (existingBill == null)
+                {
+                    context.Legislations.Add(new Legislation()
+                    {
+                        Number = bill.Number
+                        ,
+                        Congress = bill.Congress
+                        ,
+                        OriginChamber = bill.OriginChamber
+                        ,
+                        OriginChamberCode = bill.OriginChamberCode
+                        ,
+                        Title = bill.Title
+                        ,
+                        Type = bill.Type
+                        ,
+                        UpdateDate = bill.UpdateDate
+                        ,
+                        Url = bill.Url
+                        ,
+                        IntroducedDate = bill.IntroducedDate
+
+                    });
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Save member data to the database
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    private static async Task SaveMember(CongressDbContext context)
+    private static async Task SaveMembers(CongressDbContext context)
     {
-        string uri = $"https://api.congress.gov/v3/member?limit=250&api_key={apiKey}";
-        var response = await client.GetStringAsync(uri);
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var membersRoot = JsonSerializer.Deserialize<JMembersApiRoot>(response, options);
-
-        foreach (var member in membersRoot.Members)
+        Console.WriteLine("Saving all members list.");
+        for (var i = 0; i <= 15; i++)
         {
-            var existingMember = await context.Members.Include(m => m.Depiction)
-                                                              .FirstOrDefaultAsync(m => m.BioguideId == member.BioguideId);
+            int offset = i * 250;
+            string uri = $"https://api.congress.gov/v3/member?offset={offset}&api_key={apiKey}&limit=250";
+            var response = await client.GetStringAsync(uri);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var membersRoot = JsonSerializer.Deserialize<JMembersApiRoot>(response, options);
 
-            if (existingMember == null)
+            foreach (var member in membersRoot.Members)
             {
-                context.Members.Add(new Member()
+                var existingMember = await context.Members.FirstOrDefaultAsync(m => m.BioguideId == member.BioguideId);
+
+                if (existingMember == null)
                 {
-                    BioguideId = member.BioguideId
-                    ,
-                    Name = member.Name
-                    ,
-                    District = member.District
-                    ,
-                    PartyName = member.PartyName
-                    ,
-                    State = member.State
-                    ,
-                    UpdateDate = member.UpdateDate
-                    ,
-                    Url = member.Url
-                    ,
-                    Depiction = member.Depiction,
-                });
-            }
-            else
-            {
-                // Manually set each property you wish to update
-                existingMember.District = member.District;
-                existingMember.PartyName = member.PartyName;
-                existingMember.State = member.State;
-                existingMember.UpdateDate = member.UpdateDate;
-                existingMember.Url = member.Url;
-                context.Members.Update(existingMember);
+                    context.Members.Add(new Member()
+                    {
+                        BioguideId = member.BioguideId
+                        ,
+                        Name = member.Name
+                        ,
+                        District = member.District
+                        ,
+                        PartyName = member.PartyName
+                        ,
+                        State = member.State
+                        ,
+                        UpdateDate = member.UpdateDate
+                        ,
+                        Url = member.Url
+                        ,
+                        Depiction = member.Depiction,
+                    });
+                }
+                else
+                {
+                    existingMember.District = member.District;
+                    existingMember.PartyName = member.PartyName;
+                    existingMember.State = member.State;
+                    existingMember.UpdateDate = member.UpdateDate;
+                    existingMember.Url = member.Url;
+                    context.Members.Update(existingMember);
+                }
             }
         }
     }
@@ -103,13 +240,14 @@ class Program
 
     private static async Task SaveMemberDetails(CongressDbContext context, string bioGuideId)
     {
+        Console.WriteLine($"Saving/Updating all member details for bioGuideId: {bioGuideId}");
         string uri = $"https://api.congress.gov/v3/member/{bioGuideId}?api_key={apiKey}";
 
         var response = await client.GetStringAsync(uri);
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var root = JsonSerializer.Deserialize<JMemberDetailsApiRoot>(response, options);
 
-        var existingMember = await context.Members.FirstOrDefaultAsync(m => m.BioguideId == bioGuideId);
+        var existingMember = await context.Members.Include(m => m.Depiction).FirstOrDefaultAsync(m => m.BioguideId == bioGuideId);
 
         if (existingMember != null)
         {
@@ -117,9 +255,12 @@ class Program
             if (root.Member.Terms != null)
             {
                 existingMember.Terms = context.Terms.Where(t => t.MemberId == existingMember.Id).ToList();
+                existingMember.District = root.Member.District;
 
                 foreach (var jterm in root.Member.Terms)
                 {
+                    var existingCongress = context.Congresses.Where(t => t.Number == jterm.Congress)?.FirstOrDefault() ?? null;
+
                     if (!existingMember.Terms.Any(x => x.StartYear == jterm.StartYear && x.EndYear == jterm.EndYear))
                         existingMember.Terms.Add(new Term()
                         {
@@ -133,14 +274,20 @@ class Program
                         ,
                             StateCode = jterm.StateCode
                         ,
-                            Congress = jterm.Congress
+                            CongressId = existingCongress?.Id ?? null
                         ,
                             MemberId = existingMember.Id
                         });
+                    else
+                    {
+                        var existingTerm = existingMember.Terms.FirstOrDefault(x => x.StartYear == jterm.StartYear && x.EndYear == jterm.EndYear);
+                        existingTerm.CongressId = existingCongress?.Id ?? null;
+                        context.Terms.Update(existingTerm);
+                    }
                 }
             }
 
-            if (root.Member.AddressInformation != null)
+            if (root.Member.AddressInformation != null && existingMember.AddressInformationId == null)
             {
                 existingMember.AddressInformation = new AddressInformation()
                 {
@@ -158,7 +305,35 @@ class Program
                 };
             }
 
+            if (existingMember.Depiction == null)
+            {
+                if (root.Member.Depiction != null)
+                {
+                    existingMember.Depiction = new Depiction()
+                    {
+                        ImageUrl = root.Member.Depiction.ImageUrl
+                        ,
+                        Attribution = root.Member.Depiction.Attribution
+                        ,
+                        MemberId = existingMember.Id
+                    };
+                }
+                else
+                {
+                    existingMember.Depiction = new Depiction()
+                    {
+                        ImageUrl = ""
+                   ,
+                        Attribution = ""
+                   ,
+                        MemberId = existingMember.Id
+                    };
+                }
+            }
+
             context.Members.Update(existingMember);
+
+            //await context.SaveChangesAsync();
         }
     }
 
@@ -166,158 +341,3 @@ class Program
 
 
 
-
-
-
-
-public class JMembersApiRoot
-{
-    [JsonPropertyName("members")]
-    public List<JMember> Members { get; set; }
-}
-
-
-public class JMember
-{
-    [JsonPropertyName("bioguideId")]
-    public string BioguideId { get; set; }
-
-    [JsonPropertyName("state")]
-    public string? State { get; set; }
-
-    [JsonPropertyName("district")]
-    public int? District { get; set; } // Optional for senators
-
-    [JsonPropertyName("partyName")]
-    public string? PartyName { get; set; }
-
-    [JsonPropertyName("url")]
-    public string? Url { get; set; }
-
-    [JsonPropertyName("depiction")]
-    public virtual Depiction? Depiction { get; set; }
-
-    [JsonPropertyName("updateDate")]
-    public DateTime? UpdateDate { get; set; }
-
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
-
-    //[JsonPropertyName("terms")]
-    //public List<Term> Terms { get; set; }
-
-    //[JsonPropertyName("addressInformation")]
-    //public AddressInformation AddressInformation { get; set; }
-}
-
-public class JMemberDetailsApiRoot
-{
-    [JsonPropertyName("member")]
-    public JMemberDetails Member { get; set; }
-}
-
-public class JMemberDetails
-{
-    [JsonPropertyName("bioguideId")]
-    public string BioguideId { get; set; }
-
-    [JsonPropertyName("state")]
-    public string? State { get; set; }
-
-    [JsonPropertyName("district")]
-    public int? District { get; set; } // Optional for senators
-
-    [JsonPropertyName("partyName")]
-    public string? PartyName { get; set; }
-
-    [JsonPropertyName("url")]
-    public string? Url { get; set; }
-
-    [JsonPropertyName("depiction")]
-    public virtual Depiction? Depiction { get; set; }
-
-    [JsonPropertyName("updateDate")]
-    public DateTime? UpdateDate { get; set; }
-
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
-    [JsonPropertyName("terms")]
-    public List<JTerm> Terms { get; set; }
-
-    [JsonPropertyName("addressInformation")]
-    public JAddressInformation AddressInformation { get; set; }
-}
-
-
-
-public class JTerm
-{
-
-    [JsonPropertyName("startYear")]
-    public int? StartYear { get; set; }
-
-    [JsonPropertyName("endYear")]
-
-    public int? EndYear { get; set; } // Optional for ongoing terms
-
-    [StringLength(50)]
-    [JsonPropertyName("memberType")]
-    public string? MemberType { get; set; }
-
-    [StringLength(50)]
-    [JsonPropertyName("stateName")]
-    public string? StateName { get; set; }
-
-    [StringLength(50)]
-    [JsonPropertyName("stateCode")]
-    public string? StateCode { get; set; }
-
-    [JsonPropertyName("congress")]
-    public int Congress { get; set; }
-
-    [ForeignKey("JMember")]
-    public int MemberId { get; set; }
-
-    //public virtual JMember Member { get; set; }
-}
-
-
-//public class JDepiction
-//{
-
-//    [JsonPropertyName("imageUrl")]
-//    public string? ImageUrl { get; set; }
-
-//    [JsonPropertyName("attribution")]
-//    public string? Attribution { get; set; }
-
-//    [ForeignKey("JMember")]
-//    public int MemberId { get; set; }
-//    public virtual JMember Member { get; set; }
-//}
-
-
-public class JAddressInformation
-{
-    [JsonPropertyName("officeAddress")]
-    public string OfficeAddress { get; set; }
-
-    [JsonPropertyName("city")]
-    public string City { get; set; }
-
-    [JsonPropertyName("district")]
-    public string District { get; set; }
-
-    [JsonPropertyName("zipCode")]
-    public int ZipCode { get; set; }
-
-    [JsonPropertyName("phoneNumber")]
-    public string PhoneNumber { get; set; }
-
-
-    //[ForeignKey("JMember")]
-    //public int MemberId { get; set; }
-    //public virtual JMember Member { get; set; }
-}

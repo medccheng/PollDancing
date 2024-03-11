@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PollDancingLibrary.Models;
+using Action = PollDancingLibrary.Models.Action;
 
 namespace PollDancingLibrary.Data
 {
@@ -17,6 +18,18 @@ namespace PollDancingLibrary.Data
 
         public DbSet<Depiction> Depictions { get; set; }
 
+        public DbSet<Action> Actions { get; set; }
+
+        public DbSet<Legislation> Legislations { get; set; }
+
+        public DbSet<SponsoredLegislation> SponsoredLegislations { get; set; }
+
+        public DbSet<CosponsoredLegislation> CosponsoredLegislations { get; set; }
+
+        public DbSet<Congress> Congresses { get; set; }
+
+        public DbSet<Session> Sessions { get; set; }
+
         public CongressDbContext(DbContextOptions<CongressDbContext> options)
         : base(options)
         {
@@ -24,8 +37,10 @@ namespace PollDancingLibrary.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            
+            optionsBuilder.UseLazyLoadingProxies();
         }
+    
+    
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -55,6 +70,7 @@ namespace PollDancingLibrary.Data
                 .HasOne(mt => mt.Legislation)
                 .WithMany(t => t.CosponsoredLegislations)
                 .HasForeignKey(mt => mt.LegislationId);
+
 
             // Or, for the simplified approach (EF Core 5.0+), configure the many-to-many directly
             // This part is optional if EF's conventions are enough for your model

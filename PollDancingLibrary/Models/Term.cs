@@ -32,9 +32,11 @@ namespace PollDancingLibrary.Models
         [JsonPropertyName("stateCode")]
         public string? StateCode { get; set; }
 
-        [StringLength(50)]
-        [JsonPropertyName("congress")]
-        public int Congress { get; set; } = 0;
+        //[StringLength(50)]
+        //[JsonPropertyName("congress")]
+        //public int Congress { get; set; } = 0;
+
+
 
 
 
@@ -43,6 +45,12 @@ namespace PollDancingLibrary.Models
         public int MemberId { get; set; }
 
         public virtual Member Member { get; set; }
+
+
+        [ForeignKey("Congress")]
+        public int? CongressId { get; set; }
+
+        public virtual Congress Congress { get; set; }
 
     }
 
