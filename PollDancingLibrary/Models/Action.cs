@@ -28,6 +28,12 @@ namespace PollDancingLibrary.Models
         [JsonPropertyName("type")]
         public string? Type { get; set; }
 
+        [JsonPropertyName("recordedVotes")]
+        public string? RecordedVotes { get; set; }
+
+       
+        //public string? RecordedVotesUrl { get; set; }
+
         [ForeignKey("Legislation")]
         public int? LegislationId { get; set; }
 

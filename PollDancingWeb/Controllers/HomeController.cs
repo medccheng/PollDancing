@@ -25,6 +25,37 @@ namespace PollDancingWeb.Controllers
             return View();
         }
 
+        //public async Task<IActionResult> IndexAsync()
+        //{
+        //    var activeMembers = await _congressDbContext.Members
+        //                           .Include(m => m.Terms)
+        //                           .Include(m => m.Depiction)
+        //                           .Where(m => m.Terms.Any(t => t.EndYear == null || t.EndYear >= DateTime.Now.Year))
+        //                           .OrderBy(m => m.Id) // Assuming you are ordering by Id or adjust as needed
+        //                           .ToListAsync();
+
+        //    var membersList = new List<MemberModel>();
+
+        //    foreach (var member in activeMembers)
+        //    {
+        //        var sponsoredLegislations = await _congressDbContext.SponsoredLegislations.Where(s => s.MemberId == member.Id).ToListAsync();
+
+        //        membersList.Add(new MemberModel()
+        //        {
+        //            Id = member.Id,
+        //            BioguideId = member.BioguideId ?? "",
+        //            Name = member.Name ?? "",
+        //            State = member.State ?? "",
+        //            District = member.District ?? 0,
+        //            PartyName = member.PartyName ?? "",
+        //            UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd") ?? "",
+        //        });
+
+        //    }
+
+        //    return View("MembersList", membersList);
+        //}
+
         //write api to get all members
         public async Task<IActionResult> GetMembersAsync(int draw = 1, int length = 10, int start = 1, dynamic? search=null)
         {
@@ -37,6 +68,7 @@ namespace PollDancingWeb.Controllers
                 //int latestCongressNumber = await _congressDbContext.Congresses.MaxAsync(c => c.Number);
                 var activeMembers = await _congressDbContext.Members
                                     .Include(m => m.Terms)
+                                    .Include(m => m.Depiction)
                                     .Where(m => m.Terms.Any(t => t.EndYear == null || t.EndYear >= DateTime.Now.Year))
                                     .OrderBy(m => m.Id) // Assuming you are ordering by Id or adjust as needed
                                     .Skip(skip)
@@ -72,11 +104,14 @@ namespace PollDancingWeb.Controllers
 
                 var recordsFiltered = recordsTotal;
 
+                
                 // Return the data and pagination info
                 return Json(new { data, draw, recordsTotal, recordsFiltered });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex.Message);
+                _logger.LogError(ex.StackTrace);
                 return Json(new { error = ex.Message });
             }
         }
@@ -89,10 +124,14 @@ namespace PollDancingWeb.Controllers
                 .Include(m => m.Depiction)
                 .Include(m => m.Terms)
                 .Include(m => m.SponsoredLegislations)
+                .Include(m => m.CosponsoredLegislations)
+                .Include(m => m.MemberLegislationVotes)
                 .FirstOrDefault(m => m.Id == id);
 
             var terms = member.Terms.OrderByDescending(t => t.EndYear).FirstOrDefault();
             List<TermViewModel> termsViewModel = new List<TermViewModel>();
+            
+
             foreach (var term in member.Terms)
             {
                termsViewModel.Add(new TermViewModel()
@@ -112,6 +151,42 @@ namespace PollDancingWeb.Controllers
                        Name = term.Congress.Name,
                    }
                });
+            }
+
+            List<MemberLegislationVotesViewModel> memberLegislationVotes = new List<MemberLegislationVotesViewModel>();
+            foreach (var x in member.MemberLegislationVotes)
+            {
+                memberLegislationVotes.Add(new MemberLegislationVotesViewModel()
+                {
+                    MemberId = x.MemberId,
+                    LegislationId = x.LegislationId,
+                    Vote = x.Vote,
+                    LegislationTitle = x.Legislation.Title
+                });
+            }
+
+            List<SponsoredLegislationViewModel> sponsoredLegislations = new List<SponsoredLegislationViewModel>();
+            foreach (var x in member.SponsoredLegislations)
+            {
+                sponsoredLegislations.Add(new SponsoredLegislationViewModel()
+                {
+                    MemberId = x.MemberId,
+                    LegislationId = x.LegislationId,                    
+                    LegislationTitle = x.Legislation.Title,
+                    LegislationDescription = x.Legislation.Summaries.FirstOrDefault().ToString()
+                });
+            }
+
+            List<SponsoredLegislationViewModel> coSponsoredLegislations = new List<SponsoredLegislationViewModel>();
+            foreach (var x in member.CosponsoredLegislations)
+            {
+                coSponsoredLegislations.Add(new SponsoredLegislationViewModel()
+                {
+                    MemberId = x.MemberId,
+                    LegislationId = x.LegislationId,
+                    LegislationTitle = x.Legislation.Title,
+                    LegislationDescription = x.Legislation.Summaries.FirstOrDefault().ToString()
+                });
             }
 
             MemberViewModel result = new MemberViewModel()
@@ -136,8 +211,10 @@ namespace PollDancingWeb.Controllers
                     ImageUrl = member.Depiction.ImageUrl,
                     Attribution = member.Depiction.Attribution,
                 },
-                Terms = termsViewModel,
-                //SponsoredLegislations = member.SponsoredLegislations
+                Terms = termsViewModel.OrderByDescending(x => x.StartYear).ToList(),
+                SponsoredLegislations = sponsoredLegislations,
+                MemberLegislationVotes = memberLegislationVotes,
+                CosponsoredLegislations = coSponsoredLegislations
             };
             
 

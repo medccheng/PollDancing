@@ -2,11 +2,13 @@
 @{
     ViewData["Title"] = "Home Page";
 }
-<div class="container-fluid">
-    <h2 class="display-4">Congress Members</h2>
+<div class="container-fluid mt-4">
+    <div class="text-center">
+        <h4>Congress Members</h4>
+    </div>
 
-    <table id="memberTable" class="display">
-        <thead>
+    <table id="memberTable" class="table table-striped dt-responsive nowrap">
+        <thead class="thead-dark">
             <tr>
                 <th>Id</th>
                 <th>Image</th>
@@ -17,7 +19,7 @@
                 <th>District</th>
                 <th>Office</th>
                 <th>Sponsored Bills</th>
-                <th></th>
+                <th>Details</th>
             </tr>
         </thead>
     </table>
@@ -40,12 +42,11 @@
                 {
                     "data": "image",
                     "render": function (data, type, row) {
-                        return '<img src="' + data + '" alt="' + row.name + '" style="width:50px;height:auto;"/>';
+                        return '<img src="' + data + '" alt="' + row.name + '" class="img-fluid" style="width:50px;"/>';
                     }
                 },
                 { "data": "name" },
                 { "data": "partyName" },
-                
                 { "data": "type" },
                 { "data": "state" },
                 { "data": "district" },
@@ -54,11 +55,11 @@
                 {
                     "data": "id",
                     "render": function (data, type, row) {
-                        // Use the base URL and append the id to create the detail link
-                        return '<a href="' + detailsBaseUrl + '/' + data + '">View Details</a>';
+                        return '<a class="btn btn-primary" href="' + detailsBaseUrl + '/' + data + '">View Details</a>';
                     }
                 }
-            ]
+            ],
+            "responsive": true
         });
     });
 </script>

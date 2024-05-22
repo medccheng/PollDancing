@@ -30,9 +30,11 @@ namespace PollDancingLibrary.Models
         public int? PolicyAreaId { get; set; }
         public virtual PolicyArea? PolicyArea { get; set; }
 
-
+        public string? Summaries { get; set; }
 
         #region one-to-many relationships
+
+
         public virtual ICollection<Action>? Actions { get; set; }
 
         //public virtual ICollection<Amendments>? Amendments { get; set; }
@@ -55,6 +57,8 @@ namespace PollDancingLibrary.Models
 
         public virtual ICollection<CosponsoredLegislation>? CosponsoredLegislations { get; set; }
 
+        public virtual ICollection<MemberLegislationVotes>? MemberLegislationVotes { get; set; }
+
         //public ICollection<Law>? Laws { get; set; }
 
         //public virtual ICollection<CommitteeReport>? CommitteeReports { get; set; }
@@ -66,7 +70,7 @@ namespace PollDancingLibrary.Models
 
         #endregion
 
-        
+
 
     }
 

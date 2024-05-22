@@ -26,6 +26,12 @@
         public string BioguideId { get; set; }
         public string Url { get; set; }
         public DateTime UpdateDate { get; set; }
+
+        public List<MemberLegislationVotesViewModel> MemberLegislationVotes { get; set; }
+
+        public List<SponsoredLegislationViewModel> SponsoredLegislations { get; set; }
+
+        public List<SponsoredLegislationViewModel> CosponsoredLegislations { get; set; }
     }
 
     public class DepictionViewModel

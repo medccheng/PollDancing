@@ -30,6 +30,8 @@ namespace PollDancingLibrary.Data
 
         public DbSet<Session> Sessions { get; set; }
 
+        public DbSet<MemberLegislationVotes> MemberLegislationVotes { get; set; }
+
         public CongressDbContext(DbContextOptions<CongressDbContext> options)
         : base(options)
         {
@@ -69,6 +71,20 @@ namespace PollDancingLibrary.Data
             modelBuilder.Entity<CosponsoredLegislation>()
                 .HasOne(mt => mt.Legislation)
                 .WithMany(t => t.CosponsoredLegislations)
+                .HasForeignKey(mt => mt.LegislationId);
+
+
+            modelBuilder.Entity<MemberLegislationVotes>()
+                .HasKey(mt => new { mt.MemberId, mt.LegislationId });
+
+            modelBuilder.Entity<MemberLegislationVotes>()
+                .HasOne(mt => mt.Member)
+                .WithMany(m => m.MemberLegislationVotes)
+                .HasForeignKey(mt => mt.MemberId);
+
+            modelBuilder.Entity<MemberLegislationVotes>()
+                .HasOne(mt => mt.Legislation)
+                .WithMany(t => t.MemberLegislationVotes)
                 .HasForeignKey(mt => mt.LegislationId);
 
 

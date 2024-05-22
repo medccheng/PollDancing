@@ -11,6 +11,7 @@ using PollDancingScraper.JModels;
 using static System.Net.WebRequestMethods;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
+using System;
 
 class Program
 {
@@ -29,27 +30,27 @@ class Program
             using (var context = new CongressDbContext(optionsBuilder.Options))
             {
 
-                //await SaveCongresses(context);
+    //            await SaveCongresses(context);
 
-                //await SaveMembers(context);
+    //            await SaveMembers(context);
 
-                //int i = 0;
-                foreach (var member in context.Members
-    .Include(m => m.Terms)
-    .Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023"))
-    .Take(200))
-                {
-                    await SaveMemberDetails(context, member.BioguideId);
-                }
+    //            //int i = 0;
+    //            foreach (var member in context.Members
+    //.Include(m => m.Terms)
+    //.Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023"))
+    //.Take(200))
+    //            {
+    //                await SaveMemberDetails(context, member.BioguideId);
+    //            }
 
                 //Console.WriteLine("Saving all legislations data.");
                 //await SaveLegislations(context);
 
-                //foreach (var legislation in context.Legislations)
-                //{
-                //    //Console.WriteLine(string.Format("Saving details for legislation {0}", legislation.Title));
-                //    await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
-                //}
+                foreach (var legislation in context.Legislations)
+                {
+                    //Console.WriteLine(string.Format("Saving details for legislation {0}", legislation.Title));
+                    await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
+                }
 
                 await context.SaveChangesAsync();
             }
@@ -133,7 +134,13 @@ class Program
                             LegislationId = existingLegislation.Id
                         });
                     }
-                }
+                }                
+            }
+
+            if (bill.Congress != 0 && bill.Type != null && bill.Number != null)
+            {
+                //await SaveBillActions(bill.Congress, bill.Type, bill.Number, context);
+                await SaveBillSummaries(bill.Congress, bill.Type, bill.Number, existingLegislation);
             }
         }
     }
@@ -142,7 +149,8 @@ class Program
     {
         Console.WriteLine("Saving all legislations list.");
 
-        var latestCongresses = await context.Congresses.OrderByDescending(c => c.EndYear).Select(c => c.Number).Take(3).ToListAsync();
+        // Retrieve bills in the last 5 congresses
+        var latestCongresses = await context.Congresses.OrderByDescending(c => c.EndYear).Select(c => c.Number).Take(5).ToListAsync();
 
         foreach (var congress in latestCongresses)
         {
@@ -175,20 +183,79 @@ class Program
                         ,
                         Url = bill.Url
                         ,
-                        IntroducedDate = bill.IntroducedDate
+                        IntroducedDate = bill.IntroducedDate                       
 
-                    });
-                }
+                    });                    
+                }                
             }
         }
     }
 
-    /// <summary>
-    /// Save member data to the database
-    /// </summary>
-    /// <param name="context"></param>
-    /// <returns></returns>
-    private static async Task SaveMembers(CongressDbContext context)
+    private static async Task SaveBillSummaries(int congress, string? type, string? number, Legislation bill)
+    {
+        Console.WriteLine("Saving all legislations summaries.");
+        string uri = $"https://api.congress.gov/v3/bill/{congress}/{type.ToLower()}/{number}/summaries?api_key={apiKey}";
+        var response = await client.GetStringAsync(uri);
+        
+        if (bill != null)
+        {
+            bill.Summaries = response;
+        }
+    }
+
+    private static async Task SaveBillActions(int congress, string? type, string? number, CongressDbContext context)
+    {
+        Console.WriteLine("Saving all legislations actions.");
+        string uri = $"https://api.congress.gov/v3/bill/{congress}/{type.ToLower()}/{number}/actions?api_key={apiKey}";
+        var response = await client.GetStringAsync(uri);
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var actionsRoot = JsonSerializer.Deserialize<JActionApiRoot>(response, options);
+
+        var existingBill = await context.Legislations.FirstOrDefaultAsync(m => m.Number == number);
+
+        foreach (var action in actionsRoot.Actions)
+        {
+            var existingAction = await context.Actions.FirstOrDefaultAsync(m => m.ActionCode == action.ActionCode);
+
+            if (existingAction == null)
+            {
+                context.Actions.Add(new PollDancingLibrary.Models.Action()
+                {
+                    Text = action.Text,
+                    ActionCode = action.ActionCode,
+                    ActionDate = action.ActionDate,
+                    Type = action.Type,
+                    LegislationId = existingBill.Id,
+                    //RecordedVotesUrl = action.RecordedVotes?.FirstOrDefault()?.Url,
+                    RecordedVotes = await GetXMLVotes(action.RecordedVotes?.FirstOrDefault()?.Url)
+                }); 
+            }
+        }
+    }
+
+    private static async Task<string?> GetXMLVotes(string? url)
+    {
+        if (!string.IsNullOrEmpty(url))
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                HttpResponseMessage response = await client.GetAsync(url);
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string xmlContent = await response.Content.ReadAsStringAsync();
+                    return xmlContent;
+                }                
+            }
+        }
+        return null;
+    }
+
+        /// <summary>
+        /// Save member data to the database
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        private static async Task SaveMembers(CongressDbContext context)
     {
         Console.WriteLine("Saving all members list.");
         for (var i = 0; i <= 15; i++)

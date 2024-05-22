@@ -67,5 +67,7 @@ namespace PollDancingLibrary.Models
         public virtual ICollection<SponsoredLegislation> SponsoredLegislations { get; set; }
 
         public virtual ICollection<CosponsoredLegislation> CosponsoredLegislations { get; set; }
+
+        public virtual ICollection<MemberLegislationVotes> MemberLegislationVotes { get; set; }
     }
 }
