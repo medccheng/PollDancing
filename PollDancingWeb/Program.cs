@@ -21,8 +21,33 @@ builder.Services.AddControllersWithViews()
     });
 
 // Configure DbContext with SQL Server
+//builder.Services.AddDbContext<CongressDbContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Configure DbContext with SQL Server
+var server = Environment.GetEnvironmentVariable("server");
+var port = Environment.GetEnvironmentVariable("port");
+var database = Environment.GetEnvironmentVariable("database");
+var username = Environment.GetEnvironmentVariable("user");
+var password = Environment.GetEnvironmentVariable("password");
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    .Replace("{server}", server)
+    .Replace("{port}", port)
+    .Replace("{database}", database)
+    .Replace("{username}", username)
+    .Replace("{password}", password);
+
+Console.WriteLine($"Connecting with: {connectionString}");
 builder.Services.AddDbContext<CongressDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(60),
+            errorNumbersToAdd: null);
+    }));
+
 
 var app = builder.Build();
 

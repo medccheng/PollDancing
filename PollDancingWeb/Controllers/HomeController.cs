@@ -61,7 +61,7 @@ namespace PollDancingWeb.Controllers
         {
             try
             {
-                _logger.LogDebug("Get members list.");
+                _logger.LogInformation("Get members list.");
                 
                 // Calculate the number of records to skip
                 int skip = start;
@@ -96,7 +96,7 @@ namespace PollDancingWeb.Controllers
                         PartyName= member.PartyName ?? "",
                         Office = member.AddressInformation?.OfficeAddress ?? "",
                         UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd") ?? "",
-                        Type = member.Terms.OrderByDescending(t => t.EndYear)?.FirstOrDefault().MemberType ?? "",
+                        Type = member.Terms.OrderByDescending(t => t.EndYear)?.FirstOrDefault()?.MemberType ?? "",
                         Image = member.Depiction?.ImageUrl ?? "",
                         SponsoredLegislations = sponsoredLegislations?.Count ?? 0,
                     });
