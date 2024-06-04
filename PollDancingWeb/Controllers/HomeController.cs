@@ -25,36 +25,7 @@ namespace PollDancingWeb.Controllers
             return View();
         }
 
-        //public async Task<IActionResult> IndexAsync()
-        //{
-        //    var activeMembers = await _congressDbContext.Members
-        //                           .Include(m => m.Terms)
-        //                           .Include(m => m.Depiction)
-        //                           .Where(m => m.Terms.Any(t => t.EndYear == null || t.EndYear >= DateTime.Now.Year))
-        //                           .OrderBy(m => m.Id) // Assuming you are ordering by Id or adjust as needed
-        //                           .ToListAsync();
-
-        //    var membersList = new List<MemberModel>();
-
-        //    foreach (var member in activeMembers)
-        //    {
-        //        var sponsoredLegislations = await _congressDbContext.SponsoredLegislations.Where(s => s.MemberId == member.Id).ToListAsync();
-
-        //        membersList.Add(new MemberModel()
-        //        {
-        //            Id = member.Id,
-        //            BioguideId = member.BioguideId ?? "",
-        //            Name = member.Name ?? "",
-        //            State = member.State ?? "",
-        //            District = member.District ?? 0,
-        //            PartyName = member.PartyName ?? "",
-        //            UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd") ?? "",
-        //        });
-
-        //    }
-
-        //    return View("MembersList", membersList);
-        //}
+    
 
         //write api to get all members
         public async Task<IActionResult> GetMembersAsync(int draw = 1, int length = 10, int start = 1, dynamic? search=null)
@@ -64,11 +35,9 @@ namespace PollDancingWeb.Controllers
                 _logger.LogInformation("Get members list.");
                 
                 // Calculate the number of records to skip
-                int skip = start;
+                int skip = draw * length;
                 //int latestCongressNumber = await _congressDbContext.Congresses.MaxAsync(c => c.Number);
                 var activeMembers = await _congressDbContext.Members
-                                    .Include(m => m.Terms)
-                                    .Include(m => m.Depiction)
                                     .Where(m => m.Terms.Any(t => t.EndYear == null || t.EndYear >= DateTime.Now.Year))
                                     .OrderBy(m => m.Id) // Assuming you are ordering by Id or adjust as needed
                                     .Skip(skip)
@@ -77,14 +46,15 @@ namespace PollDancingWeb.Controllers
 
 
                 // Get total number of records
-                var allActiveMembers = await _congressDbContext.Members.Include(m=>m.Terms).Where(m => m.Terms.Any(t => t.EndYear == null || t.EndYear >= DateTime.Now.Year)).ToListAsync();
-                int recordsTotal = allActiveMembers.Count;
+                //var allActiveMembers = await _congressDbContext.Members.Include(m=>m.Terms).Where(m => m.Terms.Any(t => t.EndYear == null || t.EndYear >= DateTime.Now.Year)).ToListAsync();
+                //int recordsTotal = allActiveMembers.Count;
+                int? recordsTotal = 100;
                              
 
                 var data = new List<object>();
                 foreach (var member in activeMembers)
                 {
-                    var sponsoredLegislations = await _congressDbContext.SponsoredLegislations.Where(s => s.MemberId == member.Id).ToListAsync();
+                    //var sponsoredLegislations = await _congressDbContext.SponsoredLegislations.Where(s => s.MemberId == member.Id).ToListAsync();
 
                     data.Add(new
                     {
@@ -94,11 +64,11 @@ namespace PollDancingWeb.Controllers
                         State = member.State ?? "",
                         District =member.District ?? 0,
                         PartyName= member.PartyName ?? "",
-                        Office = member.AddressInformation?.OfficeAddress ?? "",
+                        //Office = member.AddressInformation?.OfficeAddress ?? "",
                         UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd") ?? "",
                         Type = member.Terms.OrderByDescending(t => t.EndYear)?.FirstOrDefault()?.MemberType ?? "",
                         Image = member.Depiction?.ImageUrl ?? "",
-                        SponsoredLegislations = sponsoredLegislations?.Count ?? 0,
+                        //SponsoredLegislations = sponsoredLegislations?.Count ?? 0,
                     });
                 }
 

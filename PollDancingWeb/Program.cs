@@ -22,21 +22,21 @@ builder.Services.AddControllersWithViews()
 
 // Configure DbContext with SQL Server
 //builder.Services.AddDbContext<CongressDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("CongressDBConnection")));
 
 // Configure DbContext with SQL Server
-var server = Environment.GetEnvironmentVariable("server");
-var port = Environment.GetEnvironmentVariable("port");
-var database = Environment.GetEnvironmentVariable("database");
-var username = Environment.GetEnvironmentVariable("user");
-var password = Environment.GetEnvironmentVariable("password");
+//var server = Environment.GetEnvironmentVariable("server");
+//var port = Environment.GetEnvironmentVariable("port");
+//var database = Environment.GetEnvironmentVariable("database");
+//var username = Environment.GetEnvironmentVariable("user");
+//var password = Environment.GetEnvironmentVariable("password");
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    .Replace("{server}", server)
-    .Replace("{port}", port)
-    .Replace("{database}", database)
-    .Replace("{username}", username)
-    .Replace("{password}", password);
+var connectionString = builder.Configuration.GetConnectionString("CongressDBConnection");
+//    .Replace("{server}", server)
+//    .Replace("{port}", port)
+//    .Replace("{database}", database)
+//    .Replace("{username}", username)
+//    .Replace("{password}", password);
 
 Console.WriteLine($"Connecting with: {connectionString}");
 builder.Services.AddDbContext<CongressDbContext>(options =>
@@ -46,7 +46,7 @@ builder.Services.AddDbContext<CongressDbContext>(options =>
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(60),
             errorNumbersToAdd: null);
-    }));
+    }).UseLazyLoadingProxies());
 
 
 var app = builder.Build();

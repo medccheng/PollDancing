@@ -1,0 +1,65 @@
+﻿@model PollDancingWeb.Models.MemberModel
+@{
+    ViewData["Title"] = "Senators";
+}
+<div class="container-fluid mt-4">
+    <div class="text-center">
+        <h4>Senators</h4>
+    </div>
+
+    <table id="memberTable" class="table table-striped dt-responsive nowrap">
+        <thead class="thead-dark">
+            <tr>
+                @* <th>Id</th> *@
+                <th>Image</th>
+                <th>Name</th>
+                <th>Party</th>
+                <th>Type</th>
+                <th>State</th>
+                @* <th>District</th>
+                <th>Office</th>
+                <th>Sponsored Bills</th> *@
+                <th>Details</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+<script>
+    $(document).ready(function () {
+        // Define the base URL for the details action
+        var detailsBaseUrl = '@Url.Action("GetDetails", "Home")';
+
+        $('#memberTable').DataTable({
+            "processing": true, // Enable processing indicator
+            "serverSide": true, // Enable server-side processing
+            "ajax": {
+                "url": "/Senator/GetMembers",
+                "dataType": "json",
+                "type": "GET"
+            },
+            "columns": [
+                //{ "data": "id" },
+                {
+                    "data": "image",
+                    "render": function (data, type, row) {
+                        return '<img src="' + data + '" alt="' + row.name + '" class="img-fluid" style="width:50px;"/>';
+                    }
+                },
+                { "data": "name" },
+                { "data": "partyName" },
+                { "data": "type" },
+                { "data": "state" },
+                //{ "data": "district" },
+                // { "data": "office" },
+                // { "data": "sponsoredLegislations" },
+                {
+                    "data": "id",
+                    "render": function (data, type, row) {
+                        return '<a class="btn btn-primary" href="' + detailsBaseUrl + '/' + data + '">View Details</a>';
+                    }
+                }
+            ],
+            "responsive": true
+        });
+    });
+</script>

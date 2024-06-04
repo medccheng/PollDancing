@@ -4,3 +4,6 @@ GET {{PollDancingWebAPI_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+GET {{PollDancingWebAPI_HostAddress}}/senator/
+Accept: application/json
