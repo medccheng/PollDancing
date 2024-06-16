@@ -21,7 +21,6 @@ class Program
 
     public static async Task Main(string[] args)
     {
-
         try
         {
             var optionsBuilder = new DbContextOptionsBuilder<CongressDbContext>();
@@ -29,33 +28,74 @@ class Program
 
             using (var context = new CongressDbContext(optionsBuilder.Options))
             {
+                bool continueRunning = true;
 
-    //            await SaveCongresses(context);
-
-    //            await SaveMembers(context);
-
-    //            //int i = 0;
-    //            foreach (var member in context.Members
-    //.Include(m => m.Terms)
-    //.Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023"))
-    //.Take(200))
-    //            {
-    //                await SaveMemberDetails(context, member.BioguideId);
-    //            }
-
-                //Console.WriteLine("Saving all legislations data.");
-                //await SaveLegislations(context);
-
-                foreach (var legislation in context.Legislations)
+                while (continueRunning)
                 {
-                    //Console.WriteLine(string.Format("Saving details for legislation {0}", legislation.Title));
-                    await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
-                }
+                    Console.WriteLine("Choose an option:");
+                    Console.WriteLine("1 - Save Congresses");
+                    Console.WriteLine("2 - Save Members");
+                    Console.WriteLine("3 - Save Member Details for Active Members");
+                    Console.WriteLine("4 - Save All Legislations Data");
+                    Console.WriteLine("5 - Save Specific Legislation Details");
+                    Console.WriteLine("6 - Save All Data");
+                    Console.WriteLine("7 - Do Nothing (Exit)");
+                    Console.Write("Enter option: ");
 
-                await context.SaveChangesAsync();
+                    var option = Console.ReadLine();
+
+                    switch (option)
+                    {
+                        case "1":
+                            await SaveCongresses(context);
+                            break;
+                        case "2":
+                            await SaveMembers(context);
+                            break;
+                        case "3":
+                            foreach (var member in context.Members.Include(m => m.Terms).Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023")).Take(200))
+                            {
+                                await SaveMemberDetails(context, member.BioguideId);
+                            }
+                            break;
+                        case "4":
+                            Console.WriteLine("Saving all legislations data.");
+                            await SaveLegislations(context);
+                            break;
+                        case "5":
+                            foreach (var legislation in context.Legislations)
+                            {
+                                await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
+                            }
+                            break;
+                        case "6":
+                            await SaveCongresses(context);
+                            await SaveMembers(context);
+                            foreach (var member in context.Members.Include(m => m.Terms).Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023")).Take(200))
+                            {
+                                await SaveMemberDetails(context, member.BioguideId);
+                            }
+                            Console.WriteLine("Saving all legislations data.");
+                            await SaveLegislations(context);
+                            foreach (var legislation in context.Legislations)
+                            {
+                                await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
+                            }
+                            break;
+                        case "7":
+                            Console.WriteLine("No action taken. Exiting...");
+                            continueRunning = false;  // Set flag to false to exit loop
+                            break;
+                        default:
+                            Console.WriteLine("Invalid option, please choose a correct number.");
+                            break;
+                    }
+
+                    await context.SaveChangesAsync();
+                }
             }
 
-            Console.WriteLine("All data saved.");
+            Console.WriteLine("Operation complete.");
             Console.ReadLine();
         }
         catch (HttpRequestException e)
@@ -64,6 +104,7 @@ class Program
             Console.WriteLine("Message :{0} ", e.Message);
         }
     }
+
 
     private static async Task SaveCongresses(CongressDbContext context)
     {
@@ -134,7 +175,7 @@ class Program
                             LegislationId = existingLegislation.Id
                         });
                     }
-                }                
+                }
             }
 
             if (bill.Congress != 0 && bill.Type != null && bill.Number != null)
@@ -183,10 +224,10 @@ class Program
                         ,
                         Url = bill.Url
                         ,
-                        IntroducedDate = bill.IntroducedDate                       
+                        IntroducedDate = bill.IntroducedDate
 
-                    });                    
-                }                
+                    });
+                }
             }
         }
     }
@@ -196,7 +237,7 @@ class Program
         Console.WriteLine("Saving all legislations summaries.");
         string uri = $"https://api.congress.gov/v3/bill/{congress}/{type.ToLower()}/{number}/summaries?api_key={apiKey}";
         var response = await client.GetStringAsync(uri);
-        
+
         if (bill != null)
         {
             bill.Summaries = response;
@@ -228,7 +269,7 @@ class Program
                     LegislationId = existingBill.Id,
                     //RecordedVotesUrl = action.RecordedVotes?.FirstOrDefault()?.Url,
                     RecordedVotes = await GetXMLVotes(action.RecordedVotes?.FirstOrDefault()?.Url)
-                }); 
+                });
             }
         }
     }
@@ -244,18 +285,18 @@ class Program
                 {
                     string xmlContent = await response.Content.ReadAsStringAsync();
                     return xmlContent;
-                }                
+                }
             }
         }
         return null;
     }
 
-        /// <summary>
-        /// Save member data to the database
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        private static async Task SaveMembers(CongressDbContext context)
+    /// <summary>
+    /// Save member data to the database
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    private static async Task SaveMembers(CongressDbContext context)
     {
         Console.WriteLine("Saving all members list.");
         for (var i = 0; i <= 15; i++)
