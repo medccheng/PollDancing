@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PollDancingLibrary.Data;
 
@@ -11,16 +12,15 @@ using PollDancingLibrary.Data;
 namespace PollDancingLibrary.Migrations
 {
     [DbContext(typeof(CongressDbContext))]
-    partial class CongressDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240303174211_CongressSessions")]
+    partial class CongressSessions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.2")
-                .HasAnnotation("Proxies:ChangeTracking", false)
-                .HasAnnotation("Proxies:CheckEquality", false)
-                .HasAnnotation("Proxies:LazyLoading", true)
+                .HasAnnotation("ProductVersion", "8.0.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -43,10 +43,6 @@ namespace PollDancingLibrary.Migrations
 
                     b.Property<int?>("LegislationId")
                         .HasColumnType("int");
-
-                    b.Property<string>("RecordedVotes")
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("Relational:JsonPropertyName", "recordedVotes");
 
                     b.Property<string>("Text")
                         .HasColumnType("nvarchar(max)")
@@ -109,10 +105,6 @@ namespace PollDancingLibrary.Migrations
                     b.Property<string>("EndYear")
                         .HasColumnType("nvarchar(max)")
                         .HasAnnotation("Relational:JsonPropertyName", "endYear");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("Relational:JsonPropertyName", "name");
 
                     b.Property<int>("Number")
                         .HasMaxLength(50)
@@ -195,9 +187,6 @@ namespace PollDancingLibrary.Migrations
                     b.Property<int?>("PolicyAreaId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Summaries")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
 
@@ -275,24 +264,6 @@ namespace PollDancingLibrary.Migrations
                     b.HasIndex("AddressInformationId");
 
                     b.ToTable("Members");
-                });
-
-            modelBuilder.Entity("PollDancingLibrary.Models.MemberLegislationVotes", b =>
-                {
-                    b.Property<int>("MemberId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("LegislationId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Vote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("MemberId", "LegislationId");
-
-                    b.HasIndex("LegislationId");
-
-                    b.ToTable("MemberLegislationVotes");
                 });
 
             modelBuilder.Entity("PollDancingLibrary.Models.PolicyArea", b =>
@@ -479,25 +450,6 @@ namespace PollDancingLibrary.Migrations
                     b.Navigation("AddressInformation");
                 });
 
-            modelBuilder.Entity("PollDancingLibrary.Models.MemberLegislationVotes", b =>
-                {
-                    b.HasOne("PollDancingLibrary.Models.Legislation", "Legislation")
-                        .WithMany("MemberLegislationVotes")
-                        .HasForeignKey("LegislationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PollDancingLibrary.Models.Member", "Member")
-                        .WithMany("MemberLegislationVotes")
-                        .HasForeignKey("MemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Legislation");
-
-                    b.Navigation("Member");
-                });
-
             modelBuilder.Entity("PollDancingLibrary.Models.Session", b =>
                 {
                     b.HasOne("PollDancingLibrary.Models.Congress", null)
@@ -552,8 +504,6 @@ namespace PollDancingLibrary.Migrations
 
                     b.Navigation("CosponsoredLegislations");
 
-                    b.Navigation("MemberLegislationVotes");
-
                     b.Navigation("SponsoredLegislations");
                 });
 
@@ -562,8 +512,6 @@ namespace PollDancingLibrary.Migrations
                     b.Navigation("CosponsoredLegislations");
 
                     b.Navigation("Depiction");
-
-                    b.Navigation("MemberLegislationVotes");
 
                     b.Navigation("SponsoredLegislations");
 

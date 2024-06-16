@@ -1,0 +1,15 @@
+@PollDancingWebAPI_HostAddress = http://localhost:5184
+
+
+### Get All Senators
+GET {{PollDancingWebAPI_HostAddress}}/senator/getsenators
+Accept: application/json
+
+###
+
+### Get Specific Senator
+GET {{PollDancingWebAPI_HostAddress}}/senator/getsenator
+Accept: application/json
+
+###
+

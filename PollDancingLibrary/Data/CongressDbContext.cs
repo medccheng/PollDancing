@@ -25,6 +25,13 @@ namespace PollDancingLibrary.Data
         public DbSet<SponsoredLegislation> SponsoredLegislations { get; set; }
 
         public DbSet<CosponsoredLegislation> CosponsoredLegislations { get; set; }
+
+        public DbSet<Congress> Congresses { get; set; }
+
+        public DbSet<Session> Sessions { get; set; }
+
+        public DbSet<MemberLegislationVotes> MemberLegislationVotes { get; set; }
+
         public CongressDbContext(DbContextOptions<CongressDbContext> options)
         : base(options)
         {
@@ -32,8 +39,10 @@ namespace PollDancingLibrary.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            
+            optionsBuilder.UseLazyLoadingProxies();
         }
+    
+    
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -62,6 +71,20 @@ namespace PollDancingLibrary.Data
             modelBuilder.Entity<CosponsoredLegislation>()
                 .HasOne(mt => mt.Legislation)
                 .WithMany(t => t.CosponsoredLegislations)
+                .HasForeignKey(mt => mt.LegislationId);
+
+
+            modelBuilder.Entity<MemberLegislationVotes>()
+                .HasKey(mt => new { mt.MemberId, mt.LegislationId });
+
+            modelBuilder.Entity<MemberLegislationVotes>()
+                .HasOne(mt => mt.Member)
+                .WithMany(m => m.MemberLegislationVotes)
+                .HasForeignKey(mt => mt.MemberId);
+
+            modelBuilder.Entity<MemberLegislationVotes>()
+                .HasOne(mt => mt.Legislation)
+                .WithMany(t => t.MemberLegislationVotes)
                 .HasForeignKey(mt => mt.LegislationId);
 
 

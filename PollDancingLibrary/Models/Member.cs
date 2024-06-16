@@ -15,6 +15,7 @@ namespace PollDancingLibrary.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [JsonPropertyName("id")]
         public int Id { get; set; }
 
         [Required]
@@ -67,5 +68,7 @@ namespace PollDancingLibrary.Models
         public virtual ICollection<SponsoredLegislation> SponsoredLegislations { get; set; }
 
         public virtual ICollection<CosponsoredLegislation> CosponsoredLegislations { get; set; }
+
+        public virtual ICollection<MemberLegislationVotes> MemberLegislationVotes { get; set; }
     }
 }

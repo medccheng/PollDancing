@@ -1,0 +1,20 @@
+﻿﻿@using NonFactors.Mvc.Grid;
+
+@model List<MemberModel>
+
+@(Html
+    .Grid(Model)
+    .Build(columns =>
+    {
+        columns.Add(model => Html.CheckBox("Check_" + model.Id)).Titled(Html.CheckBox("CheckAll"));
+        columns.Add().RenderedAs((model, row) => row + 1).Titled("#").Css("text-center");
+
+        columns.Add(model => model.Name).Titled("Name");
+        columns.Add(model => model.PartyName).Titled("Party");
+        columns.Add(model => model.State).Titled("State");
+
+        columns.Add(model => model.District).Titled("District");
+        columns.Add(model => model.UpdateDate).Titled("Updated On").Formatted("{0:d}");
+        columns.Add(model => model.Url).Titled("Url");
+    })
+)
