@@ -15,6 +15,7 @@ namespace PollDancingLibrary.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [JsonPropertyName("id")]
         public int Id { get; set; }
 
         [Required]

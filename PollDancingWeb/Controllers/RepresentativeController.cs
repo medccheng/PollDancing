@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollDancingLibrary.Data;
+using PollDancingLibrary.DTOs;
+using System.Net.Http;
+using System.Text.Json;
 
 namespace PollDancingWeb.Controllers
 {
@@ -8,11 +11,13 @@ namespace PollDancingWeb.Controllers
     {
         private readonly ILogger<RepresentativeController> _logger;
         private readonly CongressDbContext _congressDbContext;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public RepresentativeController(ILogger<RepresentativeController> logger, CongressDbContext dbContext)
+        public RepresentativeController(ILogger<RepresentativeController> logger, CongressDbContext dbContext, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _congressDbContext = dbContext;
+            _httpClientFactory = httpClientFactory;
         }
 
         public IActionResult IndexAsync()
@@ -25,44 +30,49 @@ namespace PollDancingWeb.Controllers
         {
             try
             {
-                _logger.LogInformation("Get representatives list.");
+                _logger.LogInformation("Get senators list.");
 
-                // Calculate the number of records to skip
-                int skip = draw * length;
-                var activeMembers = await _congressDbContext.Members
-                                    .Include(m => m.Depiction)
-                                    .Include(m => m.Terms)
-                                    .Where(m => m.Terms.Any(t => (((t.EndYear == null || t.EndYear >= DateTime.Now.Year) && t.MemberType == "Representative"))))
-                                    .OrderBy(m => m.Id)
-                                    .Skip(skip)
-                                    .Take(length)
-                                    .ToListAsync();
+                start = start / length + 1;
 
-                int? recordsTotal = 100;
+                HttpClient client = _httpClientFactory.CreateClient();
+                string apiUrl = $"http://localhost:5184/api/representative/getall?page={start}"; // Adjust the URL as needed
 
-
-                var data = new List<object>();
-                foreach (var member in activeMembers)
+                var response = await client.GetAsync(apiUrl);
+                if (response.IsSuccessStatusCode)
                 {
-                    data.Add(new
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<List<RepresentativeDTO>>(content);
+
+                    var data = result.Select(member => new
                     {
                         Id = member.Id,
-                        BioguideId = member.BioguideId ?? "",
-                        Name = member.Name ?? "",
-                        State = member.State ?? "",
-                        District = member.District ?? 0,
-                        PartyName = member.PartyName ?? "",
-                        UpdateDate = member.UpdateDate?.ToString("yyyy-MM-dd") ?? "",   
-                        Type = member.Terms.OrderByDescending(t => t.EndYear)?.FirstOrDefault()?.MemberType ?? "",
-                        Image = member.Depiction?.ImageUrl ?? "",
-                    });
+                        BioguideId = member.BioguideId,
+                        Name = member.Name,
+                        State = member.State,
+                        PartyName = member.PartyName,
+                        UpdateDate = member.UpdateDate,
+                        District = member.District,
+                        Image = member.Image
+                    }).ToList();
+
+                    HttpClient httpClient = _httpClientFactory.CreateClient();
+                    string apiCountUrl = $"http://localhost:5184/api/representative/getcount"; // Adjust the URL as needed
+                    int totalRecords = 0;
+
+                    var responseCount = await client.GetAsync(apiCountUrl);
+                    if (responseCount.IsSuccessStatusCode)
+                    {
+                        totalRecords = int.Parse(await responseCount.Content.ReadAsStringAsync());
+                    }
+
+                    // Assuming your API returns total count of records, adjust accordingly
+                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = totalRecords });
                 }
-
-                var recordsFiltered = recordsTotal;
-
-                // Return the data and pagination info
-                //return Json(new { data, draw, recordsTotal, recordsFiltered });
-                return Json(new { data, draw, recordsTotal, recordsFiltered });
+                else
+                {
+                    _logger.LogError($"Failed to fetch data: {response.StatusCode}");
+                    return Json(new { error = "Failed to fetch data from API" });
+                }
             }
             catch (Exception ex)
             {

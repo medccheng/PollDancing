@@ -6,19 +6,19 @@ using System.Linq;
 namespace PollDancingWebAPI.Controllers
 {
     [ApiController]
-    [Route("api/senator")]
-    public class SenatorController : ControllerBase
+    [Route("api/representative")]
+    public class RepresentativeController : ControllerBase
     {
         private readonly ILogger<SenatorController> _logger;
         private readonly CongressDbContext _congressDbContext;
 
-        public SenatorController(ILogger<SenatorController> logger, CongressDbContext dbContext)
+        public RepresentativeController(ILogger<SenatorController> logger, CongressDbContext dbContext)
         {
             _logger = logger;
             _congressDbContext = dbContext;
         }
 
-        // Get count of active senators
+        // Get count of active representatives
         [HttpGet("getcount")]
         public async Task<ActionResult> GetCount()
         {
@@ -28,16 +28,16 @@ namespace PollDancingWebAPI.Controllers
                 var query = _congressDbContext.Members
                     .Include(m => m.Depiction)
                     .Include(m => m.Terms)
-                    .Where(m => m.Terms.Any(t => t.MemberType == "Senator" &&
+                    .Where(m => m.Terms.Any(t => t.MemberType == "Representative" &&
                                                   (t.EndYear == null || t.EndYear >= DateTime.Now.Year)));
 
                 count = await query.CountAsync();
-
+               
                 return Ok(count);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An error occurred while fetching count of senators: {ex}");
+                _logger.LogError($"An error occurred while fetching count of representatives: {ex}");
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
@@ -52,7 +52,7 @@ namespace PollDancingWebAPI.Controllers
                 var query = _congressDbContext.Members
                     .Include(m => m.Depiction)
                     .Include(m => m.Terms)
-                    .Where(m => m.Terms.Any(t => t.MemberType == "Senator" &&
+                    .Where(m => m.Terms.Any(t => t.MemberType == "Representative" &&
                                                   (t.EndYear == null || t.EndYear >= DateTime.Now.Year)))
                     .OrderBy(m => m.Id);
 
@@ -66,7 +66,8 @@ namespace PollDancingWebAPI.Controllers
                     State = m.State,
                     PartyName = m.PartyName,
                     UpdateDate = m.UpdateDate?.ToString("yyyy-MM-dd"),
-                    Type = "",
+                    District = m.District,
+                    Type ="",
                     Image = m.Depiction?.ImageUrl
                 }).ToList();
 
@@ -74,7 +75,7 @@ namespace PollDancingWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An error occurred while fetching senators: {ex}");
+                _logger.LogError($"An error occurred while fetching representatives: {ex}");
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
@@ -90,32 +91,33 @@ namespace PollDancingWebAPI.Controllers
 
             try
             {
-                var senator = await _congressDbContext.Members
+                var rep = await _congressDbContext.Members
                     .Include(m => m.Depiction)
                     .Include(m => m.Terms)
                     .FirstOrDefaultAsync(m => m.Id == memberId &&
-                                             m.Terms.Any(t => t.MemberType == "Senator"));
+                                             m.Terms.Any(t => t.MemberType == "Representative"));
 
-                if (senator == null)
+                if (rep == null)
                 {
-                    return NotFound("Senator not found.");
+                    return NotFound("Representative not found.");
                 }
 
                 return Ok(new
                 {
-                    Id = senator.Id,
-                    BioguideId = senator.BioguideId,
-                    Name = senator.Name,
-                    State = senator.State,
-                    PartyName = senator.PartyName,
-                    UpdateDate = senator.UpdateDate?.ToString("yyyy-MM-dd"),
-                    Type = senator.Terms.OrderByDescending(t => t.EndYear).FirstOrDefault()?.MemberType,
-                    Image = senator.Depiction?.ImageUrl
+                    Id = rep.Id,
+                    BioguideId = rep.BioguideId,
+                    Name = rep.Name,
+                    State = rep.State,
+                    PartyName = rep.PartyName,
+                    UpdateDate = rep.UpdateDate?.ToString("yyyy-MM-dd"),
+                    District = rep.District,
+                    Type = rep.Terms.OrderByDescending(t => t.EndYear).FirstOrDefault()?.MemberType,
+                    Image = rep.Depiction?.ImageUrl
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An error occurred while fetching details for senator {memberId}: {ex}");
+                _logger.LogError($"An error occurred while fetching details for representative {memberId}: {ex}");
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }

@@ -1,9 +1,15 @@
 @PollDancingWebAPI_HostAddress = http://localhost:5184
 
-GET {{PollDancingWebAPI_HostAddress}}/weatherforecast/
+
+### Get All Senators
+GET {{PollDancingWebAPI_HostAddress}}/senator/getsenators
 Accept: application/json
 
 ###
 
-GET {{PollDancingWebAPI_HostAddress}}/senator/
+### Get Specific Senator
+GET {{PollDancingWebAPI_HostAddress}}/senator/getsenator
 Accept: application/json
+
+###
+
