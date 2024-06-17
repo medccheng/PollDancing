@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper.Execution;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollDancingLibrary.Data;
 using PollDancingLibrary.DTOs;
+using PollDancingLibrary.Migrations;
 using PollDancingLibrary.Models;
+using PollDancingWeb.Models;
 using System.Net.Http;
 using System.Text.Json;
 
@@ -85,9 +88,45 @@ namespace PollDancingWeb.Controllers
         }
 
         // GET: SenatorController/Details/5
-        public ActionResult Details(int id)
+        public async Task<ActionResult> DetailsAsync(int id)
         {
-            return View();
+            try
+            {
+                _logger.LogInformation("Get senator details.");
+
+                HttpClient client = _httpClientFactory.CreateClient();
+                string apiUrl = $"http://localhost:5184/api/senator/{id}"; // Adjust the URL as needed
+
+                var response = await client.GetAsync(apiUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var webResult = JsonSerializer.Deserialize<SenatorDTO>(content);
+
+                    SenatorDTO result = new SenatorDTO()
+                    {
+                        BioguideId = webResult.BioguideId ?? "",
+                        Name = webResult.Name ?? "",
+                        State = webResult.State ?? "",
+                        PartyName = webResult.PartyName ?? "",
+                        UpdateDate = webResult.UpdateDate,
+                        AddressInformation = webResult.AddressInformation,
+                        Image = webResult.Image,
+                        SponsoredLegislations = webResult.SponsoredLegislations,
+                        Terms = webResult.Terms,
+                        CosponsoredLegislations = webResult.CosponsoredLegislations
+                    };
+                    return View("SenatorDetails", result);
+                }
+
+                return Json(new { error = "Failed to fetch data from API" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                _logger.LogError(ex.StackTrace);
+                return Json(new { error = ex.Message });
+            }
         }
 
         // GET: SenatorController/Create

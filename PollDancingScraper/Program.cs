@@ -39,7 +39,10 @@ class Program
                     Console.WriteLine("4 - Save All Legislations Data");
                     Console.WriteLine("5 - Save Specific Legislation Details");
                     Console.WriteLine("6 - Save All Data");
-                    Console.WriteLine("7 - Do Nothing (Exit)");
+                    Console.WriteLine("7 - Save Current");
+                    Console.WriteLine("8 - Save Sponsored Legislations");
+                    Console.WriteLine("9 - Save CoSponsored Legislations");
+                    Console.WriteLine("10 - Do Nothing (Exit)");
                     Console.Write("Enter option: ");
 
                     var option = Console.ReadLine();
@@ -53,7 +56,7 @@ class Program
                             await SaveMembers(context);
                             break;
                         case "3":
-                            foreach (var member in context.Members.Include(m => m.Terms).Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023")).Take(200))
+                            foreach (var member in context.Members.Include(m => m.Terms).Where(m => !m.Terms.Any(t => t.Congress.IsCurrent && t.EndYear == null)))
                             {
                                 await SaveMemberDetails(context, member.BioguideId);
                             }
@@ -63,7 +66,7 @@ class Program
                             await SaveLegislations(context);
                             break;
                         case "5":
-                            foreach (var legislation in context.Legislations)
+                            foreach (var legislation in context.Legislations.OrderByDescending(x=>x.IntroducedDate).Take(300))
                             {
                                 await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
                             }
@@ -83,6 +86,18 @@ class Program
                             }
                             break;
                         case "7":
+                            Console.WriteLine("Get current congress...");
+                            await SaveCurrentCongress(context);
+                            break;
+                        case "8":
+                            Console.WriteLine("Get current members sponsored legislations...");
+                            await SaveSponsoredLegislations(context);
+                            break;
+                        case "9":
+                            Console.WriteLine("Get current members cosponsored legislations...");
+                            await SaveCosponsoredLegislations(context);
+                            break;
+                        case "10":
                             Console.WriteLine("No action taken. Exiting...");
                             continueRunning = false;  // Set flag to false to exit loop
                             break;
@@ -91,6 +106,7 @@ class Program
                             break;
                     }
 
+                    Console.WriteLine("Saving changes...");
                     await context.SaveChangesAsync();
                 }
             }
@@ -105,6 +121,171 @@ class Program
         }
     }
 
+    private static async Task SaveSponsoredLegislations(CongressDbContext context)
+    {
+        var currentMembers = context.Members.Include(m => m.Terms).Where(m => m.Terms.Any(t => t.Congress.IsCurrent && t.EndYear == null)).ToList();
+        int count = currentMembers.Count;
+        int counter = 1;
+        foreach (var member in currentMembers)
+        {
+            Console.WriteLine($"{counter} of {count}");
+            Console.WriteLine($"Saving sponsored legislations for {member.Name}...");
+            string uri = $"https://api.congress.gov/v3/member/{member.BioguideId}/sponsored-legislation?api_key={apiKey}";
+            var response = await client.GetStringAsync(uri);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var sponsoredLegislationsRoot = JsonSerializer.Deserialize<JSponsoredLegislationsApiRoot>(response, options);
+
+            foreach (var sponsoredLegislation in sponsoredLegislationsRoot.SponsoredLegislations)
+            {
+                var existingLegislation = await context.Legislations.FirstOrDefaultAsync(m => m.Number == sponsoredLegislation.Number && m.Congress == sponsoredLegislation.Congress);
+
+                if (existingLegislation == null)
+                {
+                    existingLegislation = new Legislation()
+                    {
+                        Number = sponsoredLegislation.Number,
+                        Congress = sponsoredLegislation.Congress,
+                        Title = sponsoredLegislation.Title,
+                        Type = sponsoredLegislation.Type,
+                        UpdateDate = sponsoredLegislation.LatestAction.ActionDate,
+                        Url = sponsoredLegislation.Url,
+                        IntroducedDate = sponsoredLegislation.IntroducedDate
+                    };
+                    context.Legislations.Add(existingLegislation);
+                    await context.SaveChangesAsync();
+                }
+
+                var existingSponsoredLegislation = await context.SponsoredLegislations.FirstOrDefaultAsync(m => m.Legislation.Number == sponsoredLegislation.Number &&  m.Member.BioguideId == member.BioguideId);
+
+                if (existingSponsoredLegislation == null)
+                {
+                    var existingLegislation2 = await context.Legislations.FirstOrDefaultAsync(m => m.Number == sponsoredLegislation.Number && m.Congress == sponsoredLegislation.Congress);
+
+                    if (existingLegislation2 != null)
+                    {
+                        context.SponsoredLegislations.Add(new SponsoredLegislation()
+                        {
+                            LegislationId = existingLegislation2.Id
+                            ,
+                            MemberId = member.Id
+                        });
+                        await context.SaveChangesAsync();
+                    }
+                }
+            }
+
+            counter++;
+        }
+    }
+
+    private static async Task SaveCosponsoredLegislations(CongressDbContext context)
+    {
+        var currentMembers = context.Members.Include(m => m.Terms).Where(m => m.Terms.Any(t => t.Congress.IsCurrent && t.EndYear == null)).ToList();
+        int count = currentMembers.Count;
+        int counter = 1;
+
+        foreach (var member in currentMembers)
+        {
+            Console.WriteLine($"{counter} of {count}");
+            Console.WriteLine($"Saving cosponsored legislations for {member.Name}...");
+            string uri = $"https://api.congress.gov/v3/member/{member.BioguideId}/cosponsored-legislation?api_key={apiKey}";
+            var response = await client.GetStringAsync(uri);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var cosponsoredLegislationsRoot = JsonSerializer.Deserialize<JCosponsoredLegislationsApiRoot>(response, options);
+
+            foreach (var cosponsoredLegislation in cosponsoredLegislationsRoot.CosponsoredLegislations)
+            {
+                var existingLegislation = await context.Legislations.FirstOrDefaultAsync(m => m.Number == cosponsoredLegislation.Number && m.Congress == cosponsoredLegislation.Congress);
+
+                if (existingLegislation == null)
+                {
+                    existingLegislation = new Legislation()
+                    {
+                        Number = cosponsoredLegislation.Number,
+                        Congress = cosponsoredLegislation.Congress,
+                        Title = cosponsoredLegislation.Title,
+                        Type = cosponsoredLegislation.Type,
+                        UpdateDate = cosponsoredLegislation.LatestAction.ActionDate,
+                        Url = cosponsoredLegislation.Url,
+                        IntroducedDate = cosponsoredLegislation.IntroducedDate
+                    };
+                    context.Legislations.Add(existingLegislation);
+                    await context.SaveChangesAsync();
+                }
+
+                var existingCosponsoredLegislation = await context.CosponsoredLegislations.FirstOrDefaultAsync(m => m.Legislation.Number == cosponsoredLegislation.Number && m.Member.BioguideId == member.BioguideId);
+
+                if (existingCosponsoredLegislation == null)
+                {
+                    var existingLegislation2 = await context.Legislations.FirstOrDefaultAsync(m => m.Number == cosponsoredLegislation.Number && m.Congress == cosponsoredLegislation.Congress);
+
+                    if (existingLegislation2 != null)
+                    {
+                        context.CosponsoredLegislations.Add(new CosponsoredLegislation()
+                        {
+                            LegislationId = existingLegislation2.Id
+                            ,
+                            MemberId = member.Id
+                        });
+                        await context.SaveChangesAsync();
+                    }
+                }
+            }
+            counter++;
+        }
+    }
+
+    private static async Task SaveCurrentCongress(CongressDbContext context)
+    {
+        Console.WriteLine("Saving all current congress entities.");
+        string uri = $"https://api.congress.gov/v3/congress/current?api_key={apiKey}";
+        var response = await client.GetStringAsync(uri);
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var congressesRoot = JsonSerializer.Deserialize<JCongressesApiRoot>(response, options);
+
+        if (congressesRoot.Congress != null)
+        {
+            var congress = congressesRoot.Congress;
+
+            string pattern = @"\d+";
+            Match match = Regex.Match(congress.Name, pattern);
+            int id = 0;
+
+            var currentCongress = await context.Congresses.FirstOrDefaultAsync(c => c.IsCurrent);
+
+            if (currentCongress != null)
+            {
+                currentCongress.IsCurrent = false;
+                context.Congresses.Update(currentCongress);
+            }
+
+            var existingCongress = await context.Congresses.FirstOrDefaultAsync(c => c.Number.Equals(congress.Number));
+
+            if (existingCongress == null)
+            {
+                context.Congresses.Add(new Congress()
+                {
+                    Name = congress.Name
+                    ,
+                    StartYear = congress.StartYear
+                    ,
+                    EndYear = congress.EndYear
+                    ,
+                    Number = (int.TryParse(match.Value, out id) ? id : 0)
+                    ,
+                    IsCurrent = true
+                });
+            }
+            else
+            {
+                existingCongress.Number = (int.TryParse(match.Value, out id) ? id : 0);
+                existingCongress.Name = congress.Name;
+                existingCongress.IsCurrent = true;
+                context.Congresses.Update(existingCongress);
+            }
+        }
+
+    }
 
     private static async Task SaveCongresses(CongressDbContext context)
     {
@@ -116,6 +297,7 @@ class Program
 
         foreach (var congress in congressesRoot.Congresses)
         {
+
             string pattern = @"\d+";
             Match match = Regex.Match(congress.Name, pattern);
             int id = 0;
@@ -131,13 +313,11 @@ class Program
                     ,
                     EndYear = congress.EndYear
                     ,
-                    Number = (int.TryParse(match.Value, out id) ? id : 0)
+                    Number = (int.TryParse(match.Value, out id) ? id : 0)                    
                 });
             }
             else
             {
-                //existingCongress.StartYear = congress.StartYear;
-                //existingCongress.EndYear = congress.EndYear;
                 existingCongress.Number = (int.TryParse(match.Value, out id) ? id : 0);
                 existingCongress.Name = congress.Name;
                 context.Congresses.Update(existingCongress);
@@ -178,6 +358,7 @@ class Program
                 }
             }
 
+
             if (bill.Congress != 0 && bill.Type != null && bill.Number != null)
             {
                 //await SaveBillActions(bill.Congress, bill.Type, bill.Number, context);
@@ -191,7 +372,7 @@ class Program
         Console.WriteLine("Saving all legislations list.");
 
         // Retrieve bills in the last 5 congresses
-        var latestCongresses = await context.Congresses.OrderByDescending(c => c.EndYear).Select(c => c.Number).Take(5).ToListAsync();
+        var latestCongresses = await context.Congresses.OrderByDescending(c => c.EndYear).Select(c => c.Number).Take(200).ToListAsync();
 
         foreach (var congress in latestCongresses)
         {

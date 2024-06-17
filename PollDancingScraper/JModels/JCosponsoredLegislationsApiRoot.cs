@@ -7,11 +7,9 @@ using System.Threading.Tasks;
 
 namespace PollDancingScraper.JModels
 {
-    public class JCongressesApiRoot
+    public class JCosponsoredLegislationsApiRoot
     {
-        [JsonPropertyName("congresses")]
-        public List<JCongress> Congresses { get; set; }
-
-        public JCongress Congress { get; set; }
+        [JsonPropertyName("cosponsoredlegislation")]
+        public List<JCosponsoredLegislation> CosponsoredLegislations { get; set; }
     }
 }

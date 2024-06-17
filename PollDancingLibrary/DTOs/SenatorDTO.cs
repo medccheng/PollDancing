@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using PollDancingLibrary.Models;
+using System.Text.Json.Serialization;
 
 namespace PollDancingLibrary.DTOs
 {
@@ -27,5 +28,26 @@ namespace PollDancingLibrary.DTOs
 
         [JsonPropertyName("image")]
         public string Image { get; set; }
+
+
+        [JsonPropertyName("addressInformation")]
+        public AddressInformationDto AddressInformation { get; set; }
+
+
+        [JsonPropertyName("sponsoredLegislation")]
+        public List<SponsoredLegislationDto> SponsoredLegislations { get; set; }
+
+
+        [JsonPropertyName("cosponsoredLegislation")]
+        public List<SponsoredLegislationDto> CosponsoredLegislations { get; set; }
+
+
+        [JsonPropertyName("terms")]
+        public List<TermDto> Terms { get; set; }
+
+
+        [JsonPropertyName("legislationVotes")]
+        public List<MemberLegislationVotesDto> MemberLegislationVotes { get; set; }
+
     }
 }

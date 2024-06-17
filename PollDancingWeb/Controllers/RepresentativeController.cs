@@ -83,9 +83,32 @@ namespace PollDancingWeb.Controllers
         }
 
         // GET: RepresentativeController/Details/5
-        public ActionResult Details(int id)
+        public async Task<ActionResult> DetailsAsync(int id)
         {
-            return View();
+            try
+            {
+                _logger.LogInformation("Get representative details.");
+
+                HttpClient client = _httpClientFactory.CreateClient();
+                string apiUrl = $"http://localhost:5184/api/representative/{id}"; // Adjust the URL as needed
+
+                var response = await client.GetAsync(apiUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<RepresentativeDTO>(content);
+
+                    return View("RepresentativeDetails", result);
+                }
+
+                return Json(new { error = "Failed to fetch data from API" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                _logger.LogError(ex.StackTrace);
+                return Json(new { error = ex.Message });
+            }
         }
 
         // GET: RepresentativeController/Create

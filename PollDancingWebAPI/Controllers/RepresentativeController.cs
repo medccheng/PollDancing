@@ -1,13 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollDancingLibrary.Data;
+using PollDancingLibrary.DTOs;
+using PollDancingLibrary.Interfaces;
 using System.Linq;
 
 namespace PollDancingWebAPI.Controllers
 {
     [ApiController]
     [Route("api/representative")]
-    public class RepresentativeController : ControllerBase
+    public class RepresentativeController : ControllerBase, IMember
     {
         private readonly ILogger<SenatorController> _logger;
         private readonly CongressDbContext _congressDbContext;
@@ -29,7 +31,7 @@ namespace PollDancingWebAPI.Controllers
                     .Include(m => m.Depiction)
                     .Include(m => m.Terms)
                     .Where(m => m.Terms.Any(t => t.MemberType == "Representative" &&
-                                                  (t.EndYear == null || t.EndYear >= DateTime.Now.Year)));
+                                                  t.Congress.IsCurrent && t.EndYear == null));
 
                 count = await query.CountAsync();
                
@@ -53,7 +55,7 @@ namespace PollDancingWebAPI.Controllers
                     .Include(m => m.Depiction)
                     .Include(m => m.Terms)
                     .Where(m => m.Terms.Any(t => t.MemberType == "Representative" &&
-                                                  (t.EndYear == null || t.EndYear >= DateTime.Now.Year)))
+                                                  t.Congress.IsCurrent && t.EndYear == null))
                     .OrderBy(m => m.Id);
 
                 var senators = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -99,10 +101,11 @@ namespace PollDancingWebAPI.Controllers
 
                 if (rep == null)
                 {
-                    return NotFound("Representative not found.");
+                    return NotFound("Senator not found.");
                 }
 
-                return Ok(new
+
+                var returnDto = new RepresentativeDTO()
                 {
                     Id = rep.Id,
                     BioguideId = rep.BioguideId,
@@ -110,14 +113,69 @@ namespace PollDancingWebAPI.Controllers
                     State = rep.State,
                     PartyName = rep.PartyName,
                     UpdateDate = rep.UpdateDate?.ToString("yyyy-MM-dd"),
-                    District = rep.District,
                     Type = rep.Terms.OrderByDescending(t => t.EndYear).FirstOrDefault()?.MemberType,
-                    Image = rep.Depiction?.ImageUrl
-                });
+                    Image = rep.Depiction?.ImageUrl,                   
+                    Terms = new List<TermDto>(),
+                    District = rep.District,
+                    SponsoredLegislations = new List<SponsoredLegislationDto>(),
+                    CosponsoredLegislations = new List<SponsoredLegislationDto>(),
+                    MemberLegislationVotes = new List<MemberLegislationVotesDto>()
+                };
+
+                returnDto.AddressInformation = new AddressInformationDto
+                {
+                    Office = rep.AddressInformation.OfficeAddress,
+                    City = rep.AddressInformation.City,
+                    District = rep.AddressInformation.District,
+                    Phone = rep.AddressInformation.PhoneNumber
+                };
+
+                foreach (var term in rep.Terms)
+                {
+                    returnDto.Terms.Add(new TermDto
+                    {
+                        StartYear = term.StartYear,
+                        EndYear = term.EndYear,
+                        MemberType = term.MemberType,
+                        StateCode = term.StateCode,
+                        StateName = term.StateName,
+                                                
+                    });
+                }
+
+                foreach (var vote in rep.MemberLegislationVotes)
+                {
+                    returnDto.MemberLegislationVotes.Add(new MemberLegislationVotesDto
+                    {
+                        LegislationName = vote.Legislation.Title,
+                        Vote = vote.Vote
+                    });
+                }
+
+                foreach (var sponsored in rep.SponsoredLegislations)
+                {
+                    returnDto.SponsoredLegislations.Add(new SponsoredLegislationDto
+                    {
+                        Title = sponsored.Legislation.Title,
+                        IntroducedDate = sponsored.Legislation.IntroducedDate.ToString(),
+                    });
+                }
+
+                foreach (var cosponsored in rep.CosponsoredLegislations)
+                {
+                    returnDto.CosponsoredLegislations.Add(new SponsoredLegislationDto
+                    {
+                        Title = cosponsored.Legislation.Title,
+                        IntroducedDate = cosponsored.Legislation.IntroducedDate.ToString(),
+                    });
+                }
+
+
+                return Ok(returnDto);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An error occurred while fetching details for representative {memberId}: {ex}");
+                _logger.LogError($"An error occurred while fetching details for senator {memberId}: {ex}");
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }

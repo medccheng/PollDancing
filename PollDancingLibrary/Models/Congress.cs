@@ -28,6 +28,8 @@ namespace PollDancingLibrary.Models
         [JsonPropertyName("name")]
         public string? Name { get; set; }
 
+        public bool IsCurrent { get; set; } = false;
+
 
         public virtual List<Session> Sessions { get; set; }
 

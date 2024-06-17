@@ -60,6 +60,8 @@ namespace PollDancingLibrary.Models
         [JsonPropertyName("addressInformation")]
         public virtual AddressInformation? AddressInformation { get; set; }
 
+        public bool IsCurrent { get; set; } = false;
+
 
 
         [JsonPropertyName("terms")]
