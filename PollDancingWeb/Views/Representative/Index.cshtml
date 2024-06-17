@@ -1,5 +1,4 @@
-﻿@model PollDancingWeb.Models.MemberModel
-@{
+﻿@{
     ViewData["Title"] = "Representatives";
 }
 <div class="container-fluid mt-4">
@@ -23,7 +22,7 @@
 <script>
     $(document).ready(function () {
         // Define the base URL for the details action
-        var detailsBaseUrl = '@Url.Action("GetDetails", "Home")';
+        var detailsBaseUrl = '@Url.Action("Details", "Representative")';
 
         $('#memberTable').DataTable({
             "processing": true, // Enable processing indicator

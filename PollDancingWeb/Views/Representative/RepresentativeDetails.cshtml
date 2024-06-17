@@ -1,0 +1,163 @@
+﻿@model PollDancingLibrary.DTOs.RepresentativeDTO
+@{
+    ViewData["Title"] = "Representative Details";
+    int pageSize = 5;  // Number of items per page
+}
+
+<div class="container mt-4">
+    <div class="text-center">
+        <h3>@Model.Name</h3>
+        <h4 class="mb-3">@Model.PartyName - @Model.State</h4>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Image))
+    {
+        <div class="card mb-4">
+            <h4 class="card-header">Depiction</h4>
+            <div class="card-body">
+                <img src="@Model.Image" class="img-fluid" style="max-width: 15%;" alt="Image of @Model.Name">
+            </div>
+        </div>
+    }
+
+    @if (Model.AddressInformation != null)
+    {
+        <div class="card mb-4">
+            <h4 class="card-header">Address Information</h4>
+            <div class="card-body">
+                <p>@Model.AddressInformation.Office, @Model.AddressInformation.City, @Model.AddressInformation.District</p>
+                <p>Phone: @Model.AddressInformation.Phone</p>
+            </div>
+        </div>
+    }
+
+    @if (Model.Terms != null && Model.Terms.Any())
+    {
+        <div class="card mb-4">
+            <h4 class="card-header">Terms</h4>
+            <div class="card-body">
+                <div id="termsList">
+                    @foreach (var term in Model.Terms)
+                    {
+                        <div class="term-item">
+                            <p>From @term.StartYear to @(term.EndYear.HasValue ? term.EndYear.ToString() : "Present") - @term.MemberType in @term.StateName</p>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="card-footer">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination" id="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+    }
+
+    @if (Model.SponsoredLegislations != null && Model.SponsoredLegislations.Any())
+    {
+        <div class="card mb-4">
+            <h4 class="card-header">Sponsored Legislations</h4>
+            <div class="card-body">
+                <div id="votesList">
+                    @foreach (var bill in Model.SponsoredLegislations)
+                    {
+                        <div class="vote-item">
+                            <p>@bill.Title</p>
+                            <p>@bill.Summaries</p>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="card-footer">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination" id="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+    }
+
+    @if (Model.CosponsoredLegislations != null && Model.CosponsoredLegislations.Any())
+    {
+        <div class="card mb-4">
+            <h4 class="card-header">Co SponsoredLegislations Legislations</h4>
+            <div class="card-body">
+                <div id="votesList">
+                    @foreach (var bill in Model.CosponsoredLegislations)
+                    {
+                        <div class="vote-item">
+                            <p>@bill.Title</p>
+                            <p>@bill.Summaries</p>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="card-footer">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination" id="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+    }
+
+    @if (Model.MemberLegislationVotes != null && Model.MemberLegislationVotes.Any())
+    {
+        <div class="card mb-4">
+            <h4 class="card-header">Bill Votes</h4>
+            <div class="card-body">
+                <div id="votesList">
+                    @foreach (var vote in Model.MemberLegislationVotes)
+                    {
+                        <div class="vote-item">
+                            <p>@vote.LegislationName</p>
+                            <p>@vote.Vote</p>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="card-footer">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination" id="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const pageSize = @pageSize;
+            const items = document.querySelectorAll('.term-item');
+            const pageCount = Math.ceil(items.length / pageSize);
+            const pagination = document.getElementById('pagination');
+
+            function showPage(page) {
+                items.forEach((item, index) => {
+                    item.style.display = (index >= (page - 1) * pageSize && index < page * pageSize) ? '' : 'none';
+                });
+            }
+
+            for (let i = 1; i <= pageCount; i++) {
+                const li = document.createElement('li');
+                li.className = 'page-item';
+                const a = document.createElement('a');
+                a.href = '#';
+                a.className = 'page-link';
+                a.textContent = i;
+                a.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    showPage(i);
+                    document.querySelectorAll('.pagination .page-item').forEach(pi => {
+                        pi.classList.remove('active');
+                    });
+                    li.classList.add('active');
+                });
+
+                li.appendChild(a);
+                pagination.appendChild(li);
+            }
+
+            showPage(1); // Display the first page initially
+            pagination.firstChild.classList.add('active'); // Highlight the first page button
+        });
+    </script>
+}

@@ -1,4 +1,4 @@
-﻿@model PollDancingWeb.Models.MemberModel
+﻿@model PollDancingLibrary.DTOs.SenatorDTO
 @{
     ViewData["Title"] = "Senators";
 }
@@ -27,7 +27,7 @@
 <script>
     $(document).ready(function () {
         // Define the base URL for the details action
-        var detailsBaseUrl = '@Url.Action("GetDetails", "Home")';
+        var detailsBaseUrl = '@Url.Action("Details", "Senator")';
 
         $('#memberTable').DataTable({
             "processing": true, // Enable processing indicator

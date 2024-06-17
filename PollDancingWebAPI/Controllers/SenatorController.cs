@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollDancingLibrary.Data;
+using PollDancingLibrary.DTOs;
+using PollDancingLibrary.Interfaces;
+using PollDancingLibrary.Models;
 using System.Linq;
 
 namespace PollDancingWebAPI.Controllers
 {
     [ApiController]
     [Route("api/senator")]
-    public class SenatorController : ControllerBase
+    public class SenatorController : ControllerBase, IMember
     {
         private readonly ILogger<SenatorController> _logger;
         private readonly CongressDbContext _congressDbContext;
@@ -29,7 +32,7 @@ namespace PollDancingWebAPI.Controllers
                     .Include(m => m.Depiction)
                     .Include(m => m.Terms)
                     .Where(m => m.Terms.Any(t => t.MemberType == "Senator" &&
-                                                  (t.EndYear == null || t.EndYear >= DateTime.Now.Year)));
+                                                  t.Congress.IsCurrent && t.EndYear == null));
 
                 count = await query.CountAsync();
 
@@ -53,7 +56,7 @@ namespace PollDancingWebAPI.Controllers
                     .Include(m => m.Depiction)
                     .Include(m => m.Terms)
                     .Where(m => m.Terms.Any(t => t.MemberType == "Senator" &&
-                                                  (t.EndYear == null || t.EndYear >= DateTime.Now.Year)))
+                                                  t.Congress.IsCurrent && t.EndYear == null))
                     .OrderBy(m => m.Id);
 
                 var senators = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -101,7 +104,8 @@ namespace PollDancingWebAPI.Controllers
                     return NotFound("Senator not found.");
                 }
 
-                return Ok(new
+
+                var returnDto = new SenatorDTO()
                 {
                     Id = senator.Id,
                     BioguideId = senator.BioguideId,
@@ -110,8 +114,62 @@ namespace PollDancingWebAPI.Controllers
                     PartyName = senator.PartyName,
                     UpdateDate = senator.UpdateDate?.ToString("yyyy-MM-dd"),
                     Type = senator.Terms.OrderByDescending(t => t.EndYear).FirstOrDefault()?.MemberType,
-                    Image = senator.Depiction?.ImageUrl
-                });
+                    Image = senator.Depiction?.ImageUrl,
+                    Terms = new List<TermDto>(),                    
+                    SponsoredLegislations = new List<SponsoredLegislationDto>(),
+                    CosponsoredLegislations = new List<SponsoredLegislationDto>(),
+                    MemberLegislationVotes = new List<MemberLegislationVotesDto>()
+                };
+
+                returnDto.AddressInformation = new AddressInformationDto
+                {
+                    Office = senator.AddressInformation.OfficeAddress,
+                    City = senator.AddressInformation.City,
+                    District = senator.AddressInformation.District,
+                    Phone = senator.AddressInformation.PhoneNumber
+                };
+
+                foreach (var term in senator.Terms)
+                {
+                    returnDto.Terms.Add(new TermDto
+                    {
+                        StartYear = term.StartYear,
+                        EndYear = term.EndYear,
+                        MemberType = term.MemberType,
+                        StateCode = term.StateCode,
+                        StateName = term.StateName
+                    });
+                }
+
+                foreach (var vote in senator.MemberLegislationVotes)
+                {
+                    returnDto.MemberLegislationVotes.Add(new MemberLegislationVotesDto
+                    {
+                        LegislationName = vote.Legislation.Title,                        
+                        Vote = vote.Vote
+                    });
+                }
+
+                foreach (var sponsored in senator.SponsoredLegislations)
+                {
+                    returnDto.SponsoredLegislations.Add(new SponsoredLegislationDto
+                    {
+                        Title = sponsored.Legislation.Title,
+                        IntroducedDate = sponsored.Legislation.IntroducedDate.ToString(),
+                    });
+                }
+
+                foreach (var cosponsored in senator.CosponsoredLegislations)
+                {
+                    returnDto.CosponsoredLegislations.Add(new SponsoredLegislationDto
+                    {
+                        Title = cosponsored.Legislation.Title,
+                        IntroducedDate = cosponsored.Legislation.IntroducedDate.ToString(),
+                    });
+                }
+                
+
+                return Ok(returnDto);
             }
             catch (Exception ex)
             {
