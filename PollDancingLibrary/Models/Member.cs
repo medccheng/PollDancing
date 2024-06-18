@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace PollDancingLibrary.Models
 {
     [Table("Members")]
-    public class Member
+    public class Member : BaseClass
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -60,9 +60,6 @@ namespace PollDancingLibrary.Models
         [JsonPropertyName("addressInformation")]
         public virtual AddressInformation? AddressInformation { get; set; }
 
-        public bool IsCurrent { get; set; } = false;
-
-
 
         [JsonPropertyName("terms")]
         public virtual ICollection<Term> Terms { get; set; }        
@@ -72,5 +69,7 @@ namespace PollDancingLibrary.Models
         public virtual ICollection<CosponsoredLegislation> CosponsoredLegislations { get; set; }
 
         public virtual ICollection<MemberLegislationVotes> MemberLegislationVotes { get; set; }
+
+        public virtual ICollection<ScoreCard> ScoreCards { get; set; }
     }
 }

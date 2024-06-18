@@ -105,6 +105,7 @@ namespace PollDancingWeb.Controllers
 
                     SenatorDTO result = new SenatorDTO()
                     {
+                        Id = webResult.Id,
                         BioguideId = webResult.BioguideId ?? "",
                         Name = webResult.Name ?? "",
                         State = webResult.State ?? "",
@@ -114,7 +115,9 @@ namespace PollDancingWeb.Controllers
                         Image = webResult.Image,
                         SponsoredLegislations = webResult.SponsoredLegislations,
                         Terms = webResult.Terms,
-                        CosponsoredLegislations = webResult.CosponsoredLegislations
+                        CosponsoredLegislations = webResult.CosponsoredLegislations,
+                        MemberLegislationVotes = webResult.MemberLegislationVotes,
+                        ScoreCards = webResult.ScoreCards
                     };
                     return View("SenatorDetails", result);
                 }

@@ -7,13 +7,11 @@ using System.Text.Json;
 namespace PollDancingLibrary.Models
 {
     [Table("Legislations")]
-    public class Legislation
+    public class Legislation: BaseClass
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-
-        public int Congress { get; set; } = 0;
         public DateTime? IntroducedDate { get; set; } = null;
         public string? Number { get; set; } = null;
         public string? Title { get; set; } = null;
@@ -37,16 +35,9 @@ namespace PollDancingLibrary.Models
 
         public virtual ICollection<Action>? Actions { get; set; }
 
-        //public virtual ICollection<Amendments>? Amendments { get; set; }
 
-        //public virtual ICollection<CboCostEstimate>? CboCostEstimates { get; set; }
-
-        //public ICollection<Summary> Summaries { get; set; }
-
-        //public ICollection<TextVersion> TextVersions { get; set; }
-
-        //public ICollection<Title>? Titles { get; set; }
-
+       //Actual ID of Congress not the DB ID
+        public int? CongressId { get; set; }
         #endregion
 
 

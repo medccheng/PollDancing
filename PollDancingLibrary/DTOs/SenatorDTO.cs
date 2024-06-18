@@ -49,5 +49,8 @@ namespace PollDancingLibrary.DTOs
         [JsonPropertyName("legislationVotes")]
         public List<MemberLegislationVotesDto> MemberLegislationVotes { get; set; }
 
+        [JsonPropertyName("scoreCards")]
+        public List<ScoreCardDto> ScoreCards { get; set; }
+
     }
 }

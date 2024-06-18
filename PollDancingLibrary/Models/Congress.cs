@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace PollDancingLibrary.Models
 {
     [Table("Congresses")]
-    public class Congress
+    public class Congress : BaseClass
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -28,7 +28,7 @@ namespace PollDancingLibrary.Models
         [JsonPropertyName("name")]
         public string? Name { get; set; }
 
-        public bool IsCurrent { get; set; } = false;
+        public bool IsCurrent { get; set; }
 
 
         public virtual List<Session> Sessions { get; set; }

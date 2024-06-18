@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace PollDancingLibrary.Models
 {
     [Table("PolicyAreas")]
-    public class PolicyArea
+    public class PolicyArea: BaseClass
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

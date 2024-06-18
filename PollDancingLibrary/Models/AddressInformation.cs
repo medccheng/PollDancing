@@ -8,7 +8,7 @@ namespace PollDancingLibrary.Models
 {
     [Table("AddressInformations")]
 
-    public class AddressInformation
+    public class AddressInformation: BaseClass
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

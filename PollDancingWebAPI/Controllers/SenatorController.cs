@@ -96,6 +96,7 @@ namespace PollDancingWebAPI.Controllers
                 var senator = await _congressDbContext.Members
                     .Include(m => m.Depiction)
                     .Include(m => m.Terms)
+                    .Include(m => m.ScoreCards)
                     .FirstOrDefaultAsync(m => m.Id == memberId &&
                                              m.Terms.Any(t => t.MemberType == "Senator"));
 
@@ -118,7 +119,8 @@ namespace PollDancingWebAPI.Controllers
                     Terms = new List<TermDto>(),                    
                     SponsoredLegislations = new List<SponsoredLegislationDto>(),
                     CosponsoredLegislations = new List<SponsoredLegislationDto>(),
-                    MemberLegislationVotes = new List<MemberLegislationVotesDto>()
+                    MemberLegislationVotes = new List<MemberLegislationVotesDto>(),
+                    ScoreCards = new List<ScoreCardDto>()
                 };
 
                 returnDto.AddressInformation = new AddressInformationDto
@@ -165,6 +167,18 @@ namespace PollDancingWebAPI.Controllers
                     {
                         Title = cosponsored.Legislation.Title,
                         IntroducedDate = cosponsored.Legislation.IntroducedDate.ToString(),
+                    });
+                }
+
+                foreach (var scoreCard in senator.ScoreCards)
+                {
+                    returnDto.ScoreCards.Add(new ScoreCardDto
+                    {
+                        Subject = scoreCard.Subject.Name,
+                        Score = scoreCard.Score,
+                        Comment = scoreCard.Comment,
+                        FocusArea = scoreCard.FocusArea,
+                        RelatedActions = scoreCard.RelatedActions
                     });
                 }
                 

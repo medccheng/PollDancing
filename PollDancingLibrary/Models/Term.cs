@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace PollDancingLibrary.Models
 {
     [Table("Terms")]
-    public class Term
+    public class Term: BaseClass
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

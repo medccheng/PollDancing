@@ -32,6 +32,10 @@ namespace PollDancingLibrary.Data
 
         public DbSet<MemberLegislationVotes> MemberLegislationVotes { get; set; }
 
+        public DbSet<Subject> Subjects { get; set; }
+
+        public DbSet<ScoreCard> ScoreCards { get; set; }
+
         public CongressDbContext(DbContextOptions<CongressDbContext> options)
         : base(options)
         {
@@ -86,6 +90,20 @@ namespace PollDancingLibrary.Data
                 .HasOne(mt => mt.Legislation)
                 .WithMany(t => t.MemberLegislationVotes)
                 .HasForeignKey(mt => mt.LegislationId);
+
+
+            modelBuilder.Entity<ScoreCard>()
+                .HasKey(mt => new { mt.MemberId, mt.SubjectId });
+
+            modelBuilder.Entity<ScoreCard>()
+                .HasOne(mt => mt.Member)
+                .WithMany(m => m.ScoreCards)
+                .HasForeignKey(mt => mt.MemberId);
+
+            modelBuilder.Entity<ScoreCard>()
+                .HasOne(mt => mt.Subject)
+                .WithMany(m => m.ScoreCards)
+                .HasForeignKey(mt => mt.SubjectId);
 
 
             // Or, for the simplified approach (EF Core 5.0+), configure the many-to-many directly

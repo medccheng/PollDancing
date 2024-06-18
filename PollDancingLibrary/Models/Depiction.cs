@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace PollDancingLibrary.Models
 {
     [Table("Depictions")]
-    public class Depiction
+    public class Depiction: BaseClass
     {
         [Key]
         [ForeignKey("Member")]

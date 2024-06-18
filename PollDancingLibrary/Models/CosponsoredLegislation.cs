@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace PollDancingLibrary.Models
 {
     [Table("CosponsoredLegislation")]
-    public class CosponsoredLegislation
+    public class CosponsoredLegislation: BaseClass
     {
 
         [ForeignKey("Member")]

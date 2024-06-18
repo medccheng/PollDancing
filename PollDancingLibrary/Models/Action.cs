@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace PollDancingLibrary.Models
 {
     [Table("Actions")]
-    public class Action
+    public class Action: BaseClass
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace PollDancingLibrary.Models
 {
     [Table("Sessions")]
-    public class Session
+    public class Session: BaseClass
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

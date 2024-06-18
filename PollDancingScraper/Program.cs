@@ -24,7 +24,7 @@ class Program
         try
         {
             var optionsBuilder = new DbContextOptionsBuilder<CongressDbContext>();
-            optionsBuilder.UseSqlServer("Server=DESKTOP-LSNPVK6\\SQLEXPRESS;Database=CongressDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True");
+            optionsBuilder.UseSqlServer("Server=DESKTOP-LSNPVK6\\SQLEXPRESS;Database=PollDancingDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True");
 
             using (var context = new CongressDbContext(optionsBuilder.Options))
             {
@@ -46,56 +46,72 @@ class Program
                     Console.Write("Enter option: ");
 
                     var option = Console.ReadLine();
-
+                    var currentCongress = context.Congresses.FirstOrDefault(c => c.IsCurrent);
+                    var currentLegislations = context.Legislations.Where(x => x.CongressId.Equals(currentCongress.Number)).OrderByDescending(x => x.IntroducedDate).ToList().Take(500);
+                    //var currentLegislations = context.Legislations.Where(x => x.CongressId.Equals(currentCongress.Number)).Skip(2000).Take(500).OrderByDescending(x => x.IntroducedDate).ToList();
                     switch (option)
                     {
                         case "1":
                             await SaveCongresses(context);
+                            await context.SaveChangesAsync();
                             break;
                         case "2":
                             await SaveMembers(context);
+                            await context.SaveChangesAsync();
                             break;
                         case "3":
-                            foreach (var member in context.Members.Include(m => m.Terms).Where(m => !m.Terms.Any(t => t.Congress.IsCurrent && t.EndYear == null)))
+                            foreach (var member in context.Members)
                             {
                                 await SaveMemberDetails(context, member.BioguideId);
                             }
+                            await context.SaveChangesAsync();
                             break;
                         case "4":
                             Console.WriteLine("Saving all legislations data.");
                             await SaveLegislations(context);
+                            await context.SaveChangesAsync();
                             break;
                         case "5":
-                            foreach (var legislation in context.Legislations.OrderByDescending(x=>x.IntroducedDate).Take(300))
+                            foreach (var legislation in currentLegislations)
                             {
-                                await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
+                                await SaveLegislationDetails(context, legislation.Number, (int)legislation.CongressId, legislation.Type);                                
                             }
+                            
                             break;
                         case "6":
                             await SaveCongresses(context);
                             await SaveMembers(context);
+                            await SaveLegislations(context);
+                            await context.SaveChangesAsync();
                             foreach (var member in context.Members.Include(m => m.Terms).Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023")).Take(200))
                             {
                                 await SaveMemberDetails(context, member.BioguideId);
                             }
-                            Console.WriteLine("Saving all legislations data.");
-                            await SaveLegislations(context);
-                            foreach (var legislation in context.Legislations)
+
+                            foreach (var legislation in currentLegislations)
                             {
-                                await SaveLegislationDetails(context, legislation.Number, legislation.Congress, legislation.Type);
+                                await SaveLegislationDetails(context, legislation.Number, (int)legislation.CongressId, legislation.Type);
                             }
+                            await context.SaveChangesAsync();
+                            await SaveCurrentCongress(context);
+                            await SaveSponsoredLegislations(context);
+                            await SaveCosponsoredLegislations(context);
+                            await context.SaveChangesAsync();
                             break;
                         case "7":
                             Console.WriteLine("Get current congress...");
                             await SaveCurrentCongress(context);
+                            await context.SaveChangesAsync();
                             break;
                         case "8":
                             Console.WriteLine("Get current members sponsored legislations...");
                             await SaveSponsoredLegislations(context);
+                            await context.SaveChangesAsync();
                             break;
                         case "9":
                             Console.WriteLine("Get current members cosponsored legislations...");
                             await SaveCosponsoredLegislations(context);
+                            await context.SaveChangesAsync();
                             break;
                         case "10":
                             Console.WriteLine("No action taken. Exiting...");
@@ -104,10 +120,7 @@ class Program
                         default:
                             Console.WriteLine("Invalid option, please choose a correct number.");
                             break;
-                    }
-
-                    Console.WriteLine("Saving changes...");
-                    await context.SaveChangesAsync();
+                    }                    
                 }
             }
 
@@ -137,14 +150,14 @@ class Program
 
             foreach (var sponsoredLegislation in sponsoredLegislationsRoot.SponsoredLegislations)
             {
-                var existingLegislation = await context.Legislations.FirstOrDefaultAsync(m => m.Number == sponsoredLegislation.Number && m.Congress == sponsoredLegislation.Congress);
+                var existingLegislation = await context.Legislations.FirstOrDefaultAsync(m => m.Number == sponsoredLegislation.Number && m.CongressId == sponsoredLegislation.Congress);
 
                 if (existingLegislation == null)
                 {
                     existingLegislation = new Legislation()
                     {
                         Number = sponsoredLegislation.Number,
-                        Congress = sponsoredLegislation.Congress,
+                        CongressId = sponsoredLegislation.Congress,
                         Title = sponsoredLegislation.Title,
                         Type = sponsoredLegislation.Type,
                         UpdateDate = sponsoredLegislation.LatestAction.ActionDate,
@@ -159,7 +172,7 @@ class Program
 
                 if (existingSponsoredLegislation == null)
                 {
-                    var existingLegislation2 = await context.Legislations.FirstOrDefaultAsync(m => m.Number == sponsoredLegislation.Number && m.Congress == sponsoredLegislation.Congress);
+                    var existingLegislation2 = await context.Legislations.FirstOrDefaultAsync(m => m.Number == sponsoredLegislation.Number && m.CongressId == sponsoredLegislation.Congress);
 
                     if (existingLegislation2 != null)
                     {
@@ -195,14 +208,14 @@ class Program
 
             foreach (var cosponsoredLegislation in cosponsoredLegislationsRoot.CosponsoredLegislations)
             {
-                var existingLegislation = await context.Legislations.FirstOrDefaultAsync(m => m.Number == cosponsoredLegislation.Number && m.Congress == cosponsoredLegislation.Congress);
+                var existingLegislation = await context.Legislations.FirstOrDefaultAsync(m => m.Number == cosponsoredLegislation.Number && m.CongressId == cosponsoredLegislation.Congress);
 
                 if (existingLegislation == null)
                 {
                     existingLegislation = new Legislation()
                     {
                         Number = cosponsoredLegislation.Number,
-                        Congress = cosponsoredLegislation.Congress,
+                        CongressId = cosponsoredLegislation.Congress,
                         Title = cosponsoredLegislation.Title,
                         Type = cosponsoredLegislation.Type,
                         UpdateDate = cosponsoredLegislation.LatestAction.ActionDate,
@@ -217,7 +230,7 @@ class Program
 
                 if (existingCosponsoredLegislation == null)
                 {
-                    var existingLegislation2 = await context.Legislations.FirstOrDefaultAsync(m => m.Number == cosponsoredLegislation.Number && m.Congress == cosponsoredLegislation.Congress);
+                    var existingLegislation2 = await context.Legislations.FirstOrDefaultAsync(m => m.Number == cosponsoredLegislation.Number && m.CongressId == cosponsoredLegislation.Congress);
 
                     if (existingLegislation2 != null)
                     {
@@ -339,31 +352,13 @@ class Program
         if (existingLegislation != null && root?.Bill != null)
         {
             var bill = root.Bill;
-            //create a List of Term using the JTerm data from member.Terms
-            foreach (var jmember in bill.Sponsors)
-            {
-                var member = context.Members.FirstOrDefault(m => m.BioguideId == jmember.BioguideId);
-                if (member != null)
-                {
-                    var sponsoredLegislation = context.SponsoredLegislations.FirstOrDefault(t => t.LegislationId == existingLegislation.Id && t.MemberId == member.Id);
-                    if (sponsoredLegislation == null)
-                    {
-                        context.SponsoredLegislations.Add(new SponsoredLegislation()
-                        {
-                            MemberId = member.Id
-                            ,
-                            LegislationId = existingLegislation.Id
-                        });
-                    }
-                }
-            }
-
-
             if (bill.Congress != 0 && bill.Type != null && bill.Number != null)
             {
-                //await SaveBillActions(bill.Congress, bill.Type, bill.Number, context);
-                await SaveBillSummaries(bill.Congress, bill.Type, bill.Number, existingLegislation);
+                await SaveBillActions(bill.Congress, bill.Type, bill.Number, context);
+                //await SaveBillSummaries(bill.Congress, bill.Type, bill.Number, existingLegislation);
             }
+
+            await context.SaveChangesAsync();
         }
     }
 
@@ -372,7 +367,8 @@ class Program
         Console.WriteLine("Saving all legislations list.");
 
         // Retrieve bills in the last 5 congresses
-        var latestCongresses = await context.Congresses.OrderByDescending(c => c.EndYear).Select(c => c.Number).Take(200).ToListAsync();
+        //var latestCongresses = await context.Congresses.OrderByDescending(c => c.EndYear).Select(c => c.Number).Take(200).ToListAsync();
+        var latestCongresses = await context.Congresses.Where(x =>x.IsCurrent).Select(c => c.Number).ToListAsync();
 
         foreach (var congress in latestCongresses)
         {
@@ -383,7 +379,7 @@ class Program
 
             foreach (var bill in legislationsRoot.Bills)
             {
-                var existingBill = await context.Legislations.FirstOrDefaultAsync(m => m.Number == bill.Number && m.Congress == bill.Congress);
+                var existingBill = await context.Legislations.FirstOrDefaultAsync(m => m.Number == bill.Number && m.CongressId == bill.Congress);
 
                 if (existingBill == null)
                 {
@@ -391,7 +387,7 @@ class Program
                     {
                         Number = bill.Number
                         ,
-                        Congress = bill.Congress
+                        CongressId = bill.Congress
                         ,
                         OriginChamber = bill.OriginChamber
                         ,
@@ -437,9 +433,9 @@ class Program
 
         foreach (var action in actionsRoot.Actions)
         {
-            var existingAction = await context.Actions.FirstOrDefaultAsync(m => m.ActionCode == action.ActionCode);
+            var existingAction = await context.Actions.FirstOrDefaultAsync(m => m.ActionCode.Equals(action.ActionCode) && m.LegislationId.Equals(existingBill.Id));
 
-            if (existingAction == null)
+            if (existingAction == null && !string.IsNullOrEmpty(action.RecordedVotes?.FirstOrDefault()?.Url))
             {
                 context.Actions.Add(new PollDancingLibrary.Models.Action()
                 {
@@ -480,7 +476,7 @@ class Program
     private static async Task SaveMembers(CongressDbContext context)
     {
         Console.WriteLine("Saving all members list.");
-        for (var i = 0; i <= 15; i++)
+        for (var i = 0; i <= 16; i++)
         {
             int offset = i * 250;
             string uri = $"https://api.congress.gov/v3/member?offset={offset}&api_key={apiKey}&limit=250";
