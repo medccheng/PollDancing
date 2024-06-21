@@ -34,23 +34,23 @@ namespace PollDancingLibrary.DTOs
         public AddressInformationDto AddressInformation { get; set; }
 
 
-        [JsonPropertyName("sponsoredLegislation")]
-        public List<SponsoredLegislationDto> SponsoredLegislations { get; set; }
+        //[JsonPropertyName("sponsoredLegislation")]
+        //public List<SponsoredLegislationDto> SponsoredLegislations { get; set; }
 
 
-        [JsonPropertyName("cosponsoredLegislation")]
-        public List<SponsoredLegislationDto> CosponsoredLegislations { get; set; }
+        //[JsonPropertyName("cosponsoredLegislation")]
+        //public List<SponsoredLegislationDto> CosponsoredLegislations { get; set; }
 
 
         [JsonPropertyName("terms")]
         public List<TermDto> Terms { get; set; }
 
 
-        [JsonPropertyName("legislationVotes")]
-        public List<MemberLegislationVotesDto> MemberLegislationVotes { get; set; }
+        //[JsonPropertyName("legislationVotes")]
+        //public List<MemberLegislationVotesDto> MemberLegislationVotes { get; set; }
 
-        [JsonPropertyName("scoreCards")]
-        public List<ScoreCardDto> ScoreCards { get; set; }
+        //[JsonPropertyName("scoreCards")]
+        //public List<ScoreCardDto> ScoreCards { get; set; }
 
     }
 }

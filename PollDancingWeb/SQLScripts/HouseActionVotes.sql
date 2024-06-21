@@ -10,7 +10,8 @@
             SELECT MAX(ActionDate) 
             FROM dbo.Actions A2 
             WHERE A2.LegislationId = dbo.Actions.LegislationId AND A2.RecordedVotes IS NOT NULL
-        ) AND ActionCode IN ('17000','18000','8000', '9000')
+        ) AND ActionCode IN ('8000', '9000')
+        AND IsParsed = 0
 )
 
 INSERT INTO MemberLegislationVotes (LegislationId, MemberId, Vote)

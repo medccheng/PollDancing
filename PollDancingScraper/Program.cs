@@ -33,13 +33,13 @@ class Program
                 while (continueRunning)
                 {
                     Console.WriteLine("Choose an option:");
-                    Console.WriteLine("1 - Save Congresses");
+                    Console.WriteLine("1 - Save Current Congresses");
                     Console.WriteLine("2 - Save Members");
                     Console.WriteLine("3 - Save Member Details for Active Members");
-                    Console.WriteLine("4 - Save All Legislations Data");
-                    Console.WriteLine("5 - Save Specific Legislation Details");
+                    Console.WriteLine("4 - Save All New/Updated Legislations");
+                    Console.WriteLine("5 - Update Legislation Details");
                     Console.WriteLine("6 - Save All Data");
-                    Console.WriteLine("7 - Save Current");
+                    Console.WriteLine("7 - Save All Congresses");
                     Console.WriteLine("8 - Save Sponsored Legislations");
                     Console.WriteLine("9 - Save CoSponsored Legislations");
                     Console.WriteLine("10 - Do Nothing (Exit)");
@@ -47,11 +47,11 @@ class Program
 
                     var option = Console.ReadLine();
                     var currentCongress = context.Congresses.FirstOrDefault(c => c.IsCurrent);
-                    var currentLegislations = context.Legislations.Where(x => x.CongressId.Equals(currentCongress.Number)).OrderByDescending(x => x.IntroducedDate).ToList().Take(500);
-                    //var currentLegislations = context.Legislations.Where(x => x.CongressId.Equals(currentCongress.Number)).Skip(2000).Take(500).OrderByDescending(x => x.IntroducedDate).ToList();
+                    //var currentLegislations = context.Legislations.Where(x => x.CongressId.Equals(currentCongress.Number)).OrderByDescending(x => x.IntroducedDate).ToList().Skip(7000);
+
                     switch (option)
                     {
-                        case "1":
+                        case "7":
                             await SaveCongresses(context);
                             await context.SaveChangesAsync();
                             break;
@@ -67,38 +67,38 @@ class Program
                             await context.SaveChangesAsync();
                             break;
                         case "4":
-                            Console.WriteLine("Saving all legislations data.");
-                            await SaveLegislations(context);
+                            Console.WriteLine("Saving all new/updated legislations data.");
+                            await SaveNewLegislations(context);
                             await context.SaveChangesAsync();
                             break;
                         case "5":
-                            foreach (var legislation in currentLegislations)
+                            foreach (var legislation in context.Legislations.Where(x => x.NeedsUpdate.Equals(true)))
                             {
-                                await SaveLegislationDetails(context, legislation.Number, (int)legislation.CongressId, legislation.Type);                                
+                                await UpdateLegislationDetails(context, legislation.Number, (int)legislation.CongressId, legislation.Type);                                
                             }
                             
                             break;
                         case "6":
                             await SaveCongresses(context);
+                            await SaveCurrentCongress(context);
                             await SaveMembers(context);
-                            await SaveLegislations(context);
+                            await SaveNewLegislations(context);
                             await context.SaveChangesAsync();
                             foreach (var member in context.Members.Include(m => m.Terms).Where(m => !m.Terms.Any() && m.UpdateDate > DateTime.Parse("1/1/2023")).Take(200))
                             {
                                 await SaveMemberDetails(context, member.BioguideId);
                             }
 
-                            foreach (var legislation in currentLegislations)
+                            foreach (var legislation in context.Legislations.Where(x => x.NeedsUpdate.Equals(true)))
                             {
-                                await SaveLegislationDetails(context, legislation.Number, (int)legislation.CongressId, legislation.Type);
+                                await UpdateLegislationDetails(context, legislation.Number, (int)legislation.CongressId, legislation.Type);
                             }
-                            await context.SaveChangesAsync();
-                            await SaveCurrentCongress(context);
+                            await context.SaveChangesAsync();                            
                             await SaveSponsoredLegislations(context);
                             await SaveCosponsoredLegislations(context);
                             await context.SaveChangesAsync();
                             break;
-                        case "7":
+                        case "1":
                             Console.WriteLine("Get current congress...");
                             await SaveCurrentCongress(context);
                             await context.SaveChangesAsync();
@@ -338,7 +338,7 @@ class Program
         }
     }
 
-    private async static Task SaveLegislationDetails(CongressDbContext context, string? billNumber, int congressNumber, string? billType)
+    private async static Task UpdateLegislationDetails(CongressDbContext context, string? billNumber, int congressNumber, string? billType)
     {
         Console.WriteLine($"Saving legislation detail for BillNumber: {billNumber}");
         string uri = $"https://api.congress.gov/v3/bill/{congressNumber}/{billType}/{billNumber}?api_key={apiKey}";
@@ -356,13 +356,16 @@ class Program
             {
                 await SaveBillActions(bill.Congress, bill.Type, bill.Number, context);
                 //await SaveBillSummaries(bill.Congress, bill.Type, bill.Number, existingLegislation);
-            }
-
-            await context.SaveChangesAsync();
+            }           
         }
     }
 
-    private static async Task SaveLegislations(CongressDbContext context)
+    /// <summary>
+    /// Download new or updated legislations from the API
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    private static async Task SaveNewLegislations(CongressDbContext context)
     {
         Console.WriteLine("Saving all legislations list.");
 
@@ -383,6 +386,7 @@ class Program
 
                 if (existingBill == null)
                 {
+                    Console.WriteLine($"Saving new legislation {bill.Number}...");
                     context.Legislations.Add(new Legislation()
                     {
                         Number = bill.Number
@@ -402,8 +406,16 @@ class Program
                         Url = bill.Url
                         ,
                         IntroducedDate = bill.IntroducedDate
-
+                        ,
+                        NeedsUpdate = true
                     });
+                }
+                else if (existingBill.UpdateDate < bill.UpdateDate)
+                {
+                    Console.WriteLine($"Updating legislation {bill.Number}...");
+                    existingBill.UpdateDate = bill.UpdateDate;
+                    existingBill.NeedsUpdate = true;
+                    context.Legislations.Update(existingBill);
                 }
             }
         }
@@ -447,8 +459,13 @@ class Program
                     //RecordedVotesUrl = action.RecordedVotes?.FirstOrDefault()?.Url,
                     RecordedVotes = await GetXMLVotes(action.RecordedVotes?.FirstOrDefault()?.Url)
                 });
-            }
+                await context.SaveChangesAsync();
+            }            
         }
+
+        existingBill.NeedsUpdate = false;
+        context.Legislations.Update(existingBill);
+        await context.SaveChangesAsync();
     }
 
     private static async Task<string?> GetXMLVotes(string? url)

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json.Serialization;
+using System.Diagnostics.Eventing.Reader;
 
 namespace PollDancingLibrary.Models
 {
@@ -38,6 +39,8 @@ namespace PollDancingLibrary.Models
         public int? LegislationId { get; set; }
 
         public virtual Legislation? Legislation { get; set; }
+
+        public bool IsParsed { get; set; }
 
         //public SourceSystem SourceSystem { get; set; }
     }

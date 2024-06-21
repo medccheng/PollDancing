@@ -1,20 +1,19 @@
 ﻿@model PollDancingLibrary.DTOs.SenatorDTO
 @{
-    ViewData["Title"] = "Senators";
+    ViewData["Title"] = "Bills";
 }
 <div class="container-fluid mt-4">
     <div class="text-center">
-        <h4>Senators</h4>
+        <h4>Bills</h4>
     </div>
 
-    <table id="memberTable" class="table table-striped dt-responsive nowrap">
+    <table id="billTable" class="table table-striped dt-responsive nowrap">
         <thead class="thead-dark">
             <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>Party</th>
-                <th>State</th>
-                <th>Details</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Number</th>
+                <th></th>
             </tr>
         </thead>
     </table>
@@ -22,27 +21,20 @@
 <script>
     $(document).ready(function () {
         // Define the base URL for the details action
-        var detailsBaseUrl = '@Url.Action("Details", "Senator")';
+        var detailsBaseUrl = '@Url.Action("Details", "Legislation")';
 
-        $('#memberTable').DataTable({
+        $('#billTable').DataTable({
             "processing": true, // Enable processing indicator
             "serverSide": true, // Enable server-side processing
             "ajax": {
-                "url": "/Senator/GetMembers",
+                "url": "/Legislation/GetLegislations",
                 "dataType": "json",
                 "type": "GET"
             },
             "columns": [
-                //{ "data": "id" },
-                {
-                    "data": "image",
-                    "render": function (data, type, row) {
-                        return '<img src="' + data + '" alt="' + row.name + '" class="img-fluid" style="width:50px;"/>';
-                    }
-                },
-                { "data": "name" },
-                { "data": "partyName" },
-                { "data": "state" },
+                { "data": "title", },
+                { "data": "type" },
+                { "data": "number" },                
                 {
                     "data": "id",
                     "render": function (data, type, row) {

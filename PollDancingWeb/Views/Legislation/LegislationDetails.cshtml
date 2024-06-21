@@ -43,9 +43,9 @@
                             @if (Model.Terms != null && Model.Terms.Any())
                             {
                                 var term = Model.Terms.OrderByDescending(x => x.StartYear).FirstOrDefault();
-                                <h6 class="text-primary">@term.MemberType in @term.StateName (@term.StateCode)</h6>
+                                <h6 class="text-primary">@term.MemberType in @term.StateName (@term.StateCode)</h6>                                
                                 <label>From @term.StartYear to @(term.EndYear.HasValue ? term.EndYear.ToString() : "Present")</label>
-                            }
+                            }                            
                         </div>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
                         <div class="card mb-3">
                             <div class="card-body text-left">
                                 <h4>Contact Information</h4>
-                                <label>@Model.AddressInformation.Office,</label>
+                                <label>@Model.AddressInformation.Office,</label> 
                                 <br />
                                 <label>Phone: @Model.AddressInformation.Phone</label>
                             </div>
@@ -73,63 +73,40 @@
 
         <div class="row mb-3">
             <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h4>Bill Votes</h4>
-                        <table id="votesTable" class="display" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Yes</th>
-                                    <th>No</th>
-                                    <th>Not Voting</th>
-                                </tr>
-                            </thead>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-12">
-                <div class="card">
+                <div class="card">                    
                     <div class="card-body">
                         <h4>Sponsored Legislations</h4>
                         <table id="legislationTable" class="display" style="width:100%">
                             <thead>
                                 <tr>
                                     <th>Title</th>
-                                    <th>Type</th>
-                                    <th>Number</th>
+                                    <th>Summary</th>
                                 </tr>
                             </thead>
+                            <tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row mb-3">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h4>Co-sponsored Legislations</h4>
-                        <table id="coSponsoredBillTable" class="display" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Type</th>
-                                    <th>Number</th>
-                                </tr>
-                            </thead>
-                        </table>
-                    </div>
-                </div>
+            @*   <div class="col-md-6">
+            <div class="card">
+            <h4 class="card-header">Co-Sponsored Legislations</h4>
+            <div class="card-body scrollable-panel">
+            @if (Model.CosponsoredLegislations != null && Model.CosponsoredLegislations.Any())
+            {
+            @foreach (var legislation in Model.CosponsoredLegislations)
+            {
+            <p>@legislation.Title</p>
+            <p>@legislation.Summaries</p>
+            }
+            }
             </div>
+            </div>
+            </div> *@
         </div>
 
-       
         @*  <div class="row mb-3">
         <div class="col-md-6">
         <div class="card">
@@ -166,11 +143,8 @@
     </div>
 </body>
 <script>
-    var memberId = @Model.Id;
-
+    var memberId = 123;
     $('#legislationTable').DataTable({
-        "processing": true, // Enable processing indicator
-        "serverSide": true,
         "ajax": {
             "url": "@Url.Action("GetSponsoredLegislations", "Legislation")",
             "type": "GET",
@@ -180,52 +154,9 @@
             },
         },
         "columns": [
-            { "data": "title" },
-            { "data": "type" },
-            { "data": "number" }
-        ],
-        "responsive": true
-    });
-
-
-    $('#coSponsoredBillTable').DataTable({
-        "processing": true, // Enable processing indicator
-        "serverSide": true,
-        "ajax": {
-            "url": "@Url.Action("GetCoSponsoredLegislations", "Legislation")",
-            "type": "GET",
-            "datatype": "json",
-            "data": {
-                "memberId": memberId
-            },
-        },
-        "columns": [
-            { "data": "title" },
-            { "data": "type" },
-            { "data": "number" }
-        ],
-        "responsive": true
-    });
-
-
-    $('#votesTable').DataTable({
-        "processing": true, // Enable processing indicator
-        "serverSide": true,
-        "ajax": {
-            "url": "@Url.Action("GetBillVotes", "LegislationVote")",
-            "type": "GET",
-            "datatype": "json",
-            "data": {
-                "memberId": memberId
-            },
-        },
-        "columns": [
-            { "data": "title" },
-            { "data": "yes" },
-            { "data": "no" },
-            { "data": "notVoting" }
-        ],
-        "responsive": true
+            { "data": "Title" },
+            { "data": "Summaries" }
+        ]
     });
 </script>
 

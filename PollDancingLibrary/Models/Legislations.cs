@@ -30,17 +30,16 @@ namespace PollDancingLibrary.Models
 
         public string? Summaries { get; set; }
 
+        //Actual ID of Congress not the DB ID
+        public int? CongressId { get; set; }
+
+        public bool? NeedsUpdate { get; set; } = false;
+
+
         #region one-to-many relationships
-
-
         public virtual ICollection<Action>? Actions { get; set; }
 
-
-       //Actual ID of Congress not the DB ID
-        public int? CongressId { get; set; }
         #endregion
-
-
 
 
         #region many-to-many relationships
@@ -50,18 +49,7 @@ namespace PollDancingLibrary.Models
 
         public virtual ICollection<MemberLegislationVotes>? MemberLegislationVotes { get; set; }
 
-        //public ICollection<Law>? Laws { get; set; }
-
-        //public virtual ICollection<CommitteeReport>? CommitteeReports { get; set; }
-        //public virtual ICollection<Committee>? Committees { get; set; }
-
-        //public ICollection<RelatedLegislation>? RelatedBills { get; set; }
-
-        //public ICollection<LegislativeSubject>? Subjects { get; set; }
-
         #endregion
-
-
 
     }
 

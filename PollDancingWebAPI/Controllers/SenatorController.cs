@@ -117,10 +117,10 @@ namespace PollDancingWebAPI.Controllers
                     Type = senator.Terms.OrderByDescending(t => t.EndYear).FirstOrDefault()?.MemberType,
                     Image = senator.Depiction?.ImageUrl,
                     Terms = new List<TermDto>(),                    
-                    SponsoredLegislations = new List<SponsoredLegislationDto>(),
-                    CosponsoredLegislations = new List<SponsoredLegislationDto>(),
-                    MemberLegislationVotes = new List<MemberLegislationVotesDto>(),
-                    ScoreCards = new List<ScoreCardDto>()
+                    //SponsoredLegislations = new List<SponsoredLegislationDto>(),
+                    //CosponsoredLegislations = new List<SponsoredLegislationDto>(),
+                    //MemberLegislationVotes = new List<MemberLegislationVotesDto>(),
+                    //ScoreCards = new List<ScoreCardDto>()
                 };
 
                 returnDto.AddressInformation = new AddressInformationDto
@@ -143,44 +143,44 @@ namespace PollDancingWebAPI.Controllers
                     });
                 }
 
-                foreach (var vote in senator.MemberLegislationVotes)
-                {
-                    returnDto.MemberLegislationVotes.Add(new MemberLegislationVotesDto
-                    {
-                        LegislationName = vote.Legislation.Title,                        
-                        Vote = vote.Vote
-                    });
-                }
+                //foreach (var vote in senator.MemberLegislationVotes)
+                //{
+                //    returnDto.MemberLegislationVotes.Add(new MemberLegislationVotesDto
+                //    {
+                //        LegislationName = vote.Legislation.Title,                        
+                //        Vote = vote.Vote
+                //    });
+                //}
 
-                foreach (var sponsored in senator.SponsoredLegislations)
-                {
-                    returnDto.SponsoredLegislations.Add(new SponsoredLegislationDto
-                    {
-                        Title = sponsored.Legislation.Title,
-                        IntroducedDate = sponsored.Legislation.IntroducedDate.ToString(),
-                    });
-                }
+                //foreach (var sponsored in senator.SponsoredLegislations)
+                //{
+                //    returnDto.SponsoredLegislations.Add(new SponsoredLegislationDto
+                //    {
+                //        Title = sponsored.Legislation.Title,
+                //        IntroducedDate = sponsored.Legislation.IntroducedDate.ToString(),
+                //    });
+                //}
 
-                foreach (var cosponsored in senator.CosponsoredLegislations)
-                {
-                    returnDto.CosponsoredLegislations.Add(new SponsoredLegislationDto
-                    {
-                        Title = cosponsored.Legislation.Title,
-                        IntroducedDate = cosponsored.Legislation.IntroducedDate.ToString(),
-                    });
-                }
+                //foreach (var cosponsored in senator.CosponsoredLegislations)
+                //{
+                //    returnDto.CosponsoredLegislations.Add(new SponsoredLegislationDto
+                //    {
+                //        Title = cosponsored.Legislation.Title,
+                //        IntroducedDate = cosponsored.Legislation.IntroducedDate.ToString(),
+                //    });
+                //}
 
-                foreach (var scoreCard in senator.ScoreCards)
-                {
-                    returnDto.ScoreCards.Add(new ScoreCardDto
-                    {
-                        Subject = scoreCard.Subject.Name,
-                        Score = scoreCard.Score,
-                        Comment = scoreCard.Comment,
-                        FocusArea = scoreCard.FocusArea,
-                        RelatedActions = scoreCard.RelatedActions
-                    });
-                }
+                //foreach (var scoreCard in senator.ScoreCards)
+                //{
+                //    returnDto.ScoreCards.Add(new ScoreCardDto
+                //    {
+                //        Subject = scoreCard.Subject.Name,
+                //        Score = scoreCard.Score,
+                //        Comment = scoreCard.Comment,
+                //        FocusArea = scoreCard.FocusArea,
+                //        RelatedActions = scoreCard.RelatedActions
+                //    });
+                //}
                 
 
                 return Ok(returnDto);

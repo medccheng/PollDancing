@@ -104,15 +104,27 @@
         <div class="card mb-4">
             <h4 class="card-header">Bill Votes</h4>
             <div class="card-body">
-                <div id="votesList">
-                    @foreach (var vote in Model.MemberLegislationVotes)
-                    {
-                        <div class="vote-item">
-                            <p>@vote.LegislationName</p>
-                            <p>@vote.Vote</p>
-                        </div>
-                    }
-                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Legislation</th>
+                            <th>Yes</th>
+                            <th>No</th>
+                            <th>Not Voting</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var vote in Model.MemberLegislationVotes)
+                        {
+                            <tr>
+                                <td>@(vote.LegislationName.Length > 100 ? vote.LegislationName.Substring(0, 100) + "..." : vote.LegislationName)</td>
+                                <td>@(new[] { "yea", "yes", "aye" }.Contains(vote.Vote.ToLower()) ? "Yes" : "")</td>
+                                <td>@(new[] { "nay", "no" }.Contains(vote.Vote.ToLower()) ? "No" : "")</td>
+                                <td>@(new[] { "not voting", "present" }.Contains(vote.Vote.ToLower()) ? "Not Voting" : "")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
             <div class="card-footer">
                 <nav aria-label="Page navigation">

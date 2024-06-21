@@ -113,11 +113,11 @@ namespace PollDancingWeb.Controllers
                         UpdateDate = webResult.UpdateDate,
                         AddressInformation = webResult.AddressInformation,
                         Image = webResult.Image,
-                        SponsoredLegislations = webResult.SponsoredLegislations,
+                        //SponsoredLegislations = webResult.SponsoredLegislations,
                         Terms = webResult.Terms,
-                        CosponsoredLegislations = webResult.CosponsoredLegislations,
-                        MemberLegislationVotes = webResult.MemberLegislationVotes,
-                        ScoreCards = webResult.ScoreCards
+                        //CosponsoredLegislations = webResult.CosponsoredLegislations,
+                        //MemberLegislationVotes = webResult.MemberLegislationVotes,
+                        //ScoreCards = webResult.ScoreCards
                     };
                     return View("SenatorDetails", result);
                 }
