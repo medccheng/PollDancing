@@ -4,173 +4,237 @@
     int pageSize = 5;  // Number of items per page
 }
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .card-header {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .scrollable-panel {
+            max-height: 400px;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
 <div class="container mt-4">
-    <div class="text-center">
-        <h3>@Model.Name</h3>
-        <h4 class="mb-3">Member ID - @Model.Id</h4>
-        <h4 class="mb-3">@Model.PartyName - @Model.State</h4>
+    <div class="row mb-3">
+        <div class="col text-center">
+            <h3 class="card-header">@Model.Name</h3>
+            <label>Member ID - @Model.Id</label><br />
+            <label>Party: @Model.PartyName</label>
+        </div>
     </div>
+
+
     @if (!string.IsNullOrEmpty(Model.Image))
     {
-        <div class="card mb-4">
-            <h4 class="card-header">Depiction</h4>
-            <div class="card-body">
-                <img src="@Model.Image" class="img-fluid" style="max-width: 15%;" alt="Image of @Model.Name">
-            </div>
-        </div>
-    }
-
-    @if (Model.AddressInformation != null)
-    {
-        <div class="card mb-4">
-            <h4 class="card-header">Address Information</h4>
-            <div class="card-body">
-                <p>@Model.AddressInformation.Office, @Model.AddressInformation.City, @Model.AddressInformation.District</p>
-                <p>Phone: @Model.AddressInformation.Phone</p>
-            </div>
-        </div>
-    }
-
-    @if (Model.Terms != null && Model.Terms.Any())
-    {
-        <div class="card mb-4">
-            <h4 class="card-header">Terms</h4>
-            <div class="card-body">
-                <div id="termsList">
-                    @foreach (var term in Model.Terms)
-                    {
-                        <div class="term-item">
-                            <p>From @term.StartYear to @(term.EndYear.HasValue ? term.EndYear.ToString() : "Present") - @term.MemberType in @term.StateName</p>
-                        </div>
-                    }
-                </div>
-            </div>
-            <div class="card-footer">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination" id="pagination"></ul>
-                </nav>
-            </div>
-        </div>
-    }
-
-    @if (Model.SponsoredLegislations != null && Model.SponsoredLegislations.Any())
-    {
-        <div class="card mb-4">
-            <h4 class="card-header">Sponsored Legislations</h4>
-            <div class="card-body">
-                <div id="votesList">
-                    @foreach (var bill in Model.SponsoredLegislations)
-                    {
-                        <div class="vote-item">
-                            <p>@bill.Title</p>
-                            <p>@bill.Summaries</p>
-                        </div>
-                    }
-                </div>
-            </div>
-            <div class="card-footer">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination" id="pagination"></ul>
-                </nav>
-            </div>
-        </div>
-    }
-
-    @if (Model.CosponsoredLegislations != null && Model.CosponsoredLegislations.Any())
-    {
-        <div class="card mb-4">
-            <h4 class="card-header">Co SponsoredLegislations Legislations</h4>
-            <div class="card-body">
-                <div id="votesList">
-                    @foreach (var bill in Model.CosponsoredLegislations)
-                    {
-                        <div class="vote-item">
-                            <p>@bill.Title</p>
-                            <p>@bill.Summaries</p>
-                        </div>
-                    }
-                </div>
-            </div>
-            <div class="card-footer">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination" id="pagination"></ul>
-                </nav>
-            </div>
-        </div>
-    }
-
-    @if (Model.MemberLegislationVotes != null && Model.MemberLegislationVotes.Any())
-    {
-        <div class="card mb-4">
-            <h4 class="card-header">Bill Votes</h4>
-            <div class="card-body">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Legislation</th>
-                            <th>Yes</th>
-                            <th>No</th>
-                            <th>Not Voting</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var vote in Model.MemberLegislationVotes)
+        <div class="row mb-3">
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <img src="@Model.Image" class="img-fluid" style="max-width: 50%;" alt="Image of @Model.Name">
+                        @if (Model.Terms != null && Model.Terms.Any())
                         {
-                            <tr>
-                                <td>@(vote.LegislationName.Length > 100 ? vote.LegislationName.Substring(0, 100) + "..." : vote.LegislationName)</td>
-                                <td>@(new[] { "yea", "yes", "aye" }.Contains(vote.Vote.ToLower()) ? "Yes" : "")</td>
-                                <td>@(new[] { "nay", "no" }.Contains(vote.Vote.ToLower()) ? "No" : "")</td>
-                                <td>@(new[] { "not voting", "present" }.Contains(vote.Vote.ToLower()) ? "Not Voting" : "")</td>
-                            </tr>
+                            var term = Model.Terms.OrderByDescending(x => x.StartYear).FirstOrDefault();
+                            <h6 class="text-primary">@term.MemberType in @term.StateName (@term.StateCode)</h6>
+                            <label>From @term.StartYear to @(term.EndYear.HasValue ? term.EndYear.ToString() : "Present")</label>
                         }
-                    </tbody>
-                </table>
+                    </div>
+                </div>
             </div>
-            <div class="card-footer">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination" id="pagination"></ul>
-                </nav>
+            <div class="col-md-7">
+                <div class="card mb-5">
+                    <div class="card-body text-center">
+                        <h4>Spin Score</h4>
+                        <h1>77%</h1>
+                    </div>
+                </div>
+                @if (Model.AddressInformation != null)
+                {
+                    <div class="card mb-3">
+                        <div class="card-body text-left">
+                            <h4>Contact Information</h4>
+                            <label>@Model.AddressInformation.Office,</label>
+                            <br />
+                            <label>Phone: @Model.AddressInformation.Phone</label>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     }
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4>Score Cards</h4>
+                    <table id="scoreCardTable" class="display" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Score</th>
+                                <th>Comment</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4>Bill Votes</h4>
+                    <table id="votesTable" class="display" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Yes</th>
+                                <th>No</th>
+                                <th>Abstain</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4>Sponsored Legislations</h4>
+                    <table id="legislationTable" class="display" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Number</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4>Co-sponsored Legislations</h4>
+                    <table id="coSponsoredBillTable" class="display" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Number</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+</body>
+<script>
+    var memberId = @Model.Id;
 
-@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const pageSize = @pageSize;
-            const items = document.querySelectorAll('.term-item');
-            const pageCount = Math.ceil(items.length / pageSize);
-            const pagination = document.getElementById('pagination');
+    $('#legislationTable').DataTable({
+        "processing": true, // Enable processing indicator
+        "serverSide": true,
+        "searching": true,
+        "ajax": {
+            "url": "@Url.Action("GetSponsoredLegislations", "Legislation")",
+            "type": "POST",
+            "datatype": "json",
+            "data": {
+                "memberId": memberId
+            },
+        },
+        "columns": [
+            { "data": "title", "orderable": true },
+            { "data": "type", "orderable": true },
+            { "data": "number", "orderable": true }
+        ],
+        "responsive": true
+    });
 
-            function showPage(page) {
-                items.forEach((item, index) => {
-                    item.style.display = (index >= (page - 1) * pageSize && index < page * pageSize) ? '' : 'none';
-                });
-            }
 
-            for (let i = 1; i <= pageCount; i++) {
-                const li = document.createElement('li');
-                li.className = 'page-item';
-                const a = document.createElement('a');
-                a.href = '#';
-                a.className = 'page-link';
-                a.textContent = i;
-                a.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    showPage(i);
-                    document.querySelectorAll('.pagination .page-item').forEach(pi => {
-                        pi.classList.remove('active');
-                    });
-                    li.classList.add('active');
-                });
+    $('#coSponsoredBillTable').DataTable({
+        "processing": true, // Enable processing indicator
+        "serverSide": true,
+        "searching": true,
+        "ajax": {
+            "url": "@Url.Action("GetCoSponsoredLegislations", "Legislation")",
+            "type": "POST",
+            "datatype": "json",
+            "data": {
+                "memberId": memberId
+            },
+        },
+        "columns": [
+            { "data": "title", "orderable": true },
+            { "data": "type", "orderable": true },
+            { "data": "number", "orderable": true }
+        ],
+        "responsive": true
+    });
 
-                li.appendChild(a);
-                pagination.appendChild(li);
-            }
 
-            showPage(1); // Display the first page initially
-            pagination.firstChild.classList.add('active'); // Highlight the first page button
-        });
-    </script>
-}
+    $('#votesTable').DataTable({
+        "processing": true, // Enable processing indicator
+        "serverSide": true,
+        "searching": true,
+        "ajax": {
+            "url": "@Url.Action("GetBillVotes", "LegislationVote")",
+            "type": "POST",
+            "datatype": "json",
+            "data": {
+                "memberId": memberId
+            },
+        },
+        "columns": [
+            { "data": "title", "orderable": true },
+            { "data": "yes", "orderable": true },
+            { "data": "no", "orderable": true },
+            { "data": "notVoting", "orderable": true }
+        ],
+        "responsive": true
+    });
+
+    $('#scoreCardTable').DataTable({
+        "processing": true, // Enable processing indicator
+        "serverSide": true,
+        "searching": true,
+        "ajax": {
+            "url": "@Url.Action("GetscoreCards", "ScoreCard")",
+            "type": "POST",
+            "datatype": "json",
+            "data": {
+                "memberId": memberId
+            },
+        },
+        "columns": [
+            { "data": "subject", "orderable": true },
+            { "data": "score", "orderable": true },
+            { "data": "comment", "orderable": true }
+        ],
+        "responsive": true
+    });
+</script>
+
+</html>
