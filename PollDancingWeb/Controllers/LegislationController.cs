@@ -27,7 +27,7 @@ namespace PollDancingWeb.Controllers
         }
 
 
-        public async Task<ActionResult> GetLegislationsAsync(int draw = 1, int length = 10, int start = 1, dynamic? search = null)
+        public async Task<ActionResult> GetLegislationsAsync(int draw = 1, int length = 10, int start = 1)
         {
             try
             {
@@ -37,6 +37,12 @@ namespace PollDancingWeb.Controllers
 
                 HttpClient client = _httpClientFactory.CreateClient();
                 string apiUrl = $"http://localhost:5184/api/legislation/getall?page={start}"; // Adjust the URL as needed
+
+                var search = Request.Form["search[value]"].FirstOrDefault();
+                if (search != null)
+                {
+                    apiUrl += $"&search={search.ToLower().Trim()}";
+                }
 
                 var response = await client.GetAsync(apiUrl);
                 if (response.IsSuccessStatusCode)
@@ -52,11 +58,12 @@ namespace PollDancingWeb.Controllers
                         Title = bill.Title?.Length > 75 ? bill.Title.Substring(0,75) + "..." : (bill.Title ?? ""),
                         Type = bill.Type ?? "",
                         //Summary = bill.Summaries
-                    }).ToList();
+                    }).Where(b => !String.IsNullOrEmpty(b.Title)).ToList();
 
                     HttpClient httpClient = _httpClientFactory.CreateClient();
                     string apiCountUrl = $"http://localhost:5184/api/legislation/getcount"; // Adjust the URL as needed
                     int totalRecords = 0;
+                    
 
                     var responseCount = await client.GetAsync(apiCountUrl);
                     if (responseCount.IsSuccessStatusCode)
@@ -64,8 +71,21 @@ namespace PollDancingWeb.Controllers
                         totalRecords = int.Parse(await responseCount.Content.ReadAsStringAsync());
                     }
 
+                    int filterRecords = totalRecords;
+
+                    if (!String.IsNullOrEmpty(search))
+                    {
+                        HttpClient httpClient2 = _httpClientFactory.CreateClient();
+                        string apiCountUrl2 = $"http://localhost:5184/api/legislation/getfilteredcount/{search}"; // Adjust the URL as needed
+                        var responseCount2 = await client.GetAsync(apiCountUrl2);
+                        if (responseCount2.IsSuccessStatusCode)
+                        {
+                            filterRecords = int.Parse(await responseCount2.Content.ReadAsStringAsync());
+                        }
+                    }
+
                     // Assuming your API returns total count of records, adjust accordingly
-                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = totalRecords });
+                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = filterRecords });
                 }
                 else
                 {
@@ -82,13 +102,15 @@ namespace PollDancingWeb.Controllers
         }
 
 
-        public async Task<ActionResult> GetSponsoredLegislationsAsync(int memberId=0, int draw = 1, int length = 10, int start = 1, dynamic? search = null)
+        public async Task<ActionResult> GetSponsoredLegislationsAsync(int memberId=0, int draw = 1, int length = 10, int start = 1)
         {
             try
             {
                 _logger.LogInformation("Get all legislations.");
                 HttpClient client = _httpClientFactory.CreateClient();
                 string apiUrl = $"http://localhost:5184/api/legislation/getsponsoredlegislations/{memberId}"; // Adjust the URL as needed
+
+                var search = Request.Form["search[value]"].FirstOrDefault().ToLower().Trim();
 
                 var response = await client.GetAsync(apiUrl);
                 if (response.IsSuccessStatusCode)
@@ -105,14 +127,21 @@ namespace PollDancingWeb.Controllers
                         Type = bill.Type,
                         Summary = bill.Summaries,
                         
-                    }).ToList();
+                    }).Where(b => !String.IsNullOrEmpty(b.Title)).ToList();
 
-                    int skip = (start - 1) * length;
+                    //int skip = (start - 1) * length;
                     int totalRecords = data.Count();
-                    data = data.Skip(skip).Take(length).ToList();
+                    int filterRecords = totalRecords;
+                    data = data.Skip(start).Take(length).ToList();
+
+                    if (!String.IsNullOrEmpty(search))
+                    {
+                        data = data.Where(bill => bill.Title?.ToLower().Contains(search) ?? false).ToList();
+                        filterRecords = data.Count();
+                    }
 
                     // Assuming your API returns total count of records, adjust accordingly
-                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = totalRecords });
+                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = filterRecords });
                 }
                 else
                 {
@@ -129,7 +158,7 @@ namespace PollDancingWeb.Controllers
         }
 
 
-        public async Task<ActionResult> GetCoSponsoredLegislationsAsync(int memberId = 0, int draw = 1, int length = 10, int start = 1, dynamic? search = null)
+        public async Task<ActionResult> GetCoSponsoredLegislationsAsync(int memberId = 0, int draw = 1, int length = 10, int start = 1)
         {
             try
             {
@@ -139,6 +168,8 @@ namespace PollDancingWeb.Controllers
 
                 HttpClient client = _httpClientFactory.CreateClient();
                 string apiUrl = $"http://localhost:5184/api/legislation/getcosponsoredlegislations/{memberId}?page={start}"; // Adjust the URL as needed
+
+                var search = Request.Form["search[value]"].FirstOrDefault().ToLower().Trim();
 
                 var response = await client.GetAsync(apiUrl);
                 if (response.IsSuccessStatusCode)
@@ -154,14 +185,22 @@ namespace PollDancingWeb.Controllers
                         Title = bill.Title,
                         Type = bill.Type,
                         Summary = bill.Summaries
-                    }).ToList();
+                    }).Where(b => !String.IsNullOrEmpty(b.Title))
+                    .ToList();
 
-                    int skip = (start - 1) * length;
+                    //int skip = (start - 1) * length;
                     int totalRecords = data.Count();
-                    data = data.Skip(skip).Take(length).ToList();
+                    int filterRecords = totalRecords;
+                    data = data.Skip(start).Take(length).ToList();
+
+                    if (!String.IsNullOrEmpty(search))
+                    {
+                        data = data.Where(bill => bill.Title?.ToLower().Contains(search) ?? false).ToList();
+                        filterRecords = data.Count();
+                    }
 
                     // Assuming your API returns total count of records, adjust accordingly
-                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = totalRecords });
+                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = filterRecords });
                 }
                 else
                 {

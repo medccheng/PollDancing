@@ -3,13 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using PollDancingLibrary.Data;
 using PollDancingLibrary.DTOs;
 using PollDancingLibrary.Interfaces;
+using PollDancingLibrary.Models;
 using System.Linq;
 
 namespace PollDancingWebAPI.Controllers
 {
     [ApiController]
     [Route("api/representative")]
-    public class RepresentativeController : ControllerBase, IMember
+    public class RepresentativeController : ControllerBase
     {
         private readonly ILogger<SenatorController> _logger;
         private readonly CongressDbContext _congressDbContext;
@@ -46,7 +47,7 @@ namespace PollDancingWebAPI.Controllers
 
         // Get a list of senators with pagination
         [HttpGet("getall")]
-        public async Task<ActionResult> GetAll(int page = 1)
+        public async Task<ActionResult> GetAll(int page = 1, string? search = null)
         {
             const int pageSize = 10;
             try
@@ -56,7 +57,12 @@ namespace PollDancingWebAPI.Controllers
                     .Include(m => m.Terms)
                     .Where(m => m.Terms.Any(t => t.MemberType == "Representative" &&
                                                   t.Congress.IsCurrent && t.EndYear == null))
-                    .OrderBy(m => m.Id);
+                    .OrderBy(m => m.Name);
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query = (IOrderedQueryable<Member>)query.Where(s => s.Name.ToLower().Contains(search));
+                }
 
                 var senators = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 

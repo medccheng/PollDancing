@@ -30,7 +30,7 @@ namespace PollDancingWeb.Controllers
             return View();
         }
 
-        public async Task<ActionResult> GetMembersAsync(int draw = 1, int length = 10, int start = 1, dynamic? search = null)
+        public async Task<ActionResult> GetMembersAsync(int draw = 1, int length = 10, int start = 1)
         {
             try
             {
@@ -40,6 +40,12 @@ namespace PollDancingWeb.Controllers
 
                 HttpClient client = _httpClientFactory.CreateClient();
                 string apiUrl = $"http://localhost:5184/api/senator/getall?page={start}"; // Adjust the URL as needed
+                string search = Request.Form["search[value]"].FirstOrDefault().ToLower().Trim();
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    apiUrl += $"&search={search}";
+                }
 
                 var response = await client.GetAsync(apiUrl);
                 if (response.IsSuccessStatusCode)
@@ -70,8 +76,15 @@ namespace PollDancingWeb.Controllers
                         totalRecords = int.Parse(await responseCount.Content.ReadAsStringAsync());
                     }
 
+                    int filterRecords = totalRecords;
+                    if (!string.IsNullOrEmpty(search))
+                    {
+                        data = data.Where(x => x.Name.ToLower().Contains(search)).ToList();
+                        filterRecords = data.Count();
+                    }
+
                     // Assuming your API returns total count of records, adjust accordingly
-                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = totalRecords });
+                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = filterRecords });
                 }
                 else
                 {
@@ -113,11 +126,7 @@ namespace PollDancingWeb.Controllers
                         UpdateDate = webResult.UpdateDate,
                         AddressInformation = webResult.AddressInformation,
                         Image = webResult.Image,
-                        //SponsoredLegislations = webResult.SponsoredLegislations,
                         Terms = webResult.Terms,
-                        //CosponsoredLegislations = webResult.CosponsoredLegislations,
-                        //MemberLegislationVotes = webResult.MemberLegislationVotes,
-                        //ScoreCards = webResult.ScoreCards
                     };
                     return View("SenatorDetails", result);
                 }

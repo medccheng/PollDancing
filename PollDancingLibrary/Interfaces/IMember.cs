@@ -8,5 +8,7 @@ namespace PollDancingLibrary.Interfaces
         Task<ActionResult> GetCount();
         Task<ActionResult> GetAll(int page = 1);
         Task<ActionResult> GetDetail(int memberId);
+
+        Task<ActionResult> GetAll(int page = 1, string search=null);
     }
 }

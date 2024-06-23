@@ -30,7 +30,7 @@
             "ajax": {
                 "url": "/Representative/GetMembers",
                 "dataType": "json",
-                "type": "GET"
+                "type": "POST"
             },
             "columns": [
                 {
@@ -39,10 +39,10 @@
                         return '<img src="' + data + '" alt="' + row.name + '" class="img-fluid" style="width:50px;"/>';
                     }
                 },
-                { "data": "name" },
-                { "data": "partyName" },
-                { "data": "state" },
-                { "data": "district" },
+                { "data": "name", "orderable": false },
+                { "data": "partyName", "orderable": false },
+                { "data": "state", "orderable": false },
+                { "data": "district", "orderable": false },
                 {
                     "data": "id",
                     "render": function (data, type, row) {

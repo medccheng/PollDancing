@@ -29,12 +29,12 @@
             "ajax": {
                 "url": "/Legislation/GetLegislations",
                 "dataType": "json",
-                "type": "GET"
+                "type": "POST"
             },
             "columns": [
-                { "data": "title", },
-                { "data": "type" },
-                { "data": "number" },                
+                { "data": "title", "orderable": false },
+                { "data": "type", "orderable": false },
+                { "data": "number", "orderable": false },
                 {
                     "data": "id",
                     "render": function (data, type, row) {

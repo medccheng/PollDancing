@@ -9,13 +9,13 @@ using System.Linq;
 namespace PollDancingWebAPI.Controllers
 {
     [ApiController]
-    [Route("api/legislationvote")]
-    public class LegislationVoteController : ControllerBase
+    [Route("api/scorecard")]
+    public class ScoreCardController : ControllerBase
     {
-        private readonly ILogger<LegislationVoteController> _logger;
+        private readonly ILogger<ScoreCardController> _logger;
         private readonly CongressDbContext _congressDbContext;
 
-        public LegislationVoteController(ILogger<LegislationVoteController> logger, CongressDbContext dbContext)
+        public ScoreCardController(ILogger<ScoreCardController> logger, CongressDbContext dbContext)
         {
             _logger = logger;
             _congressDbContext = dbContext;
@@ -27,8 +27,8 @@ namespace PollDancingWebAPI.Controllers
             throw new NotImplementedException();
         }
 
-        [HttpGet("getbillvotes/{memberId}")]
-        public async Task<ActionResult> GetBillVotes(int memberId)
+        [HttpGet("getscorecards/{memberId}")]
+        public async Task<ActionResult> GetScoreCards(int memberId)
         {
             if (memberId <= 0)
             {
@@ -37,22 +37,23 @@ namespace PollDancingWebAPI.Controllers
 
             try
             {
-                var total = await _congressDbContext.MemberLegislationVotes
+                var total = await _congressDbContext.ScoreCards
                     .Where(m => m.MemberId.Equals(memberId)).CountAsync();
 
-                var votes = await _congressDbContext.MemberLegislationVotes
+                var scoreCards = await _congressDbContext.ScoreCards
                     .Where(m => m.MemberId.Equals(memberId)).ToListAsync();
 
-                if (votes == null)
+                if (scoreCards == null)
                 {
-                    return NotFound("No Bill Votes");
+                    return NotFound("No Score Cards");
                 }
 
 
-                var responseData = votes.Select(vote => new
+                var responseData = scoreCards.Select(sc => new
                 {
-                    Title = vote.Legislation.Title,
-                    Vote = vote.Vote,
+                    Subject = sc.Subject.Name,
+                    Score = sc.Score,
+                    Comment = sc.Comment
                 }).ToList();
 
 
@@ -60,7 +61,7 @@ namespace PollDancingWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An error occurred while fetching sponsored legislations for member id: {memberId}: {ex}");
+                _logger.LogError($"An error occurred while fetching score cards for member id: {memberId}: {ex}");
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }

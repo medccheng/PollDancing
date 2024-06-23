@@ -10,7 +10,7 @@ namespace PollDancingWebAPI.Controllers
 {
     [ApiController]
     [Route("api/legislation")]
-    public class LegislationController : ControllerBase, IMember
+    public class LegislationController : ControllerBase
     {
         private readonly ILogger<LegislationController> _logger;
         private readonly CongressDbContext _congressDbContext;
@@ -40,14 +40,43 @@ namespace PollDancingWebAPI.Controllers
         }
 
         // Get a list of senators with pagination
-        [HttpGet("getall")]
-        public async Task<ActionResult> GetAll(int page = 1)
+        [HttpGet("getfilteredcount/{search}")]
+        public async Task<ActionResult> GetFilteredCount(string search = null)
         {
             const int pageSize = 10;
             try
             {
                 var query = _congressDbContext.Legislations
                     .OrderByDescending(m => m.Number);
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query = (IOrderedQueryable<Legislation>)query.Where(m => m.Title.ToLower().Contains(search.ToLower().Trim()));
+                }               
+
+                return Ok(query.Count());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"An error occurred while fetching count: {ex}");
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
+
+        // Get a list of senators with pagination
+        [HttpGet("getall")]
+        public async Task<ActionResult> GetAll(int page = 1, string search = null)
+        {
+            const int pageSize = 10;
+            try
+            {
+                var query = _congressDbContext.Legislations
+                    .OrderByDescending(m => m.Number);
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query = (IOrderedQueryable<Legislation>)query.Where(m => m.Title.ToLower().Contains(search.ToLower().Trim()));
+                }
 
                 var legislations = await query
                     .OrderByDescending(x=> Convert.ToInt32(x.Number))

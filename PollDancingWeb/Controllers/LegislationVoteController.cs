@@ -27,7 +27,7 @@ namespace PollDancingWeb.Controllers
         }
 
 
-        public async Task<ActionResult> GetBillVotes(int draw = 1, int length = 10, int start = 1, dynamic? search = null, int memberId=0)
+        public async Task<ActionResult> GetBillVotes(int draw = 1, int length = 10, int start = 1, int memberId=0)
         {
             try
             {
@@ -37,6 +37,7 @@ namespace PollDancingWeb.Controllers
 
                 HttpClient client = _httpClientFactory.CreateClient();
                 string apiUrl = $"http://localhost:5184/api/legislationvote/getbillvotes/{memberId}"; // Adjust the URL as needed
+                var search = Request.Form["search[value]"].FirstOrDefault().ToLower().Trim();
 
                 var response = await client.GetAsync(apiUrl);
                 if (response.IsSuccessStatusCode)
@@ -56,10 +57,17 @@ namespace PollDancingWeb.Controllers
 
                     int totalRecords = data.Count();
                     int skip = (start - 1) * length;
-                    data = data.Skip(skip).Take(length).ToList();                    
+                    data = data.Skip(skip).Take(length).ToList();  
+                    
+                    int filterRecords = totalRecords;
+                    if (!string.IsNullOrEmpty(search))
+                    {
+                        data = data.Where(x => x.Title.ToLower().Contains(search)).ToList();
+                        filterRecords = data.Count();
+                    }
 
                     // Assuming your API returns total count of records, adjust accordingly
-                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = totalRecords });
+                    return Json(new { data, draw, recordsTotal = totalRecords, recordsFiltered = filterRecords });
                 }
                 else
                 {

@@ -75,6 +75,25 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-body">
+                        <h4>Score Cards</h4>
+                        <table id="scoreCardTable" class="display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Score</th>
+                                    <th>Comment</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
                         <h4>Bill Votes</h4>
                         <table id="votesTable" class="display" style="width:100%">
                             <thead>
@@ -82,7 +101,7 @@
                                     <th>Title</th>
                                     <th>Yes</th>
                                     <th>No</th>
-                                    <th>Not Voting</th>
+                                    <th>Abstain</th>
                                 </tr>
                             </thead>
                         </table>
@@ -129,40 +148,7 @@
             </div>
         </div>
 
-       
-        @*  <div class="row mb-3">
-        <div class="col-md-6">
-        <div class="card">
-        <h4 class="card-header">Bill Votes</h4>
-        <div class="card-body scrollable-panel">
-        @if (Model.MemberLegislationVotes != null && Model.MemberLegislationVotes.Any())
-        {
-        @foreach (var vote in Model.MemberLegislationVotes)
-        {
-        <p>@vote.LegislationName</p>
-        <p>@vote.Vote</p>
-        }
-        }
-        </div>
-        </div>
-        </div>
-        <div class="col-md-6">
-        <div class="card">
-        <h4 class="card-header">Scorecards</h4>
-        <div class="card-body scrollable-panel">
-        @if (Model.ScoreCards != null && Model.ScoreCards.Any())
-        {
-        @foreach (var scorecard in Model.ScoreCards)
-        {
-        <p>@scorecard.Subject</p>
-        <p>@scorecard.Score</p>
-        <p>@scorecard.Comment</p>
-        }
-        }
-        </div>
-        </div>
-        </div>
-        </div> *@
+             
     </div>
 </body>
 <script>
@@ -171,18 +157,19 @@
     $('#legislationTable').DataTable({
         "processing": true, // Enable processing indicator
         "serverSide": true,
+        "searching": true,
         "ajax": {
             "url": "@Url.Action("GetSponsoredLegislations", "Legislation")",
-            "type": "GET",
+            "type": "POST",
             "datatype": "json",
             "data": {
                 "memberId": memberId
             },
         },
         "columns": [
-            { "data": "title" },
-            { "data": "type" },
-            { "data": "number" }
+            { "data": "title", "orderable": true },
+            { "data": "type", "orderable": true },
+            { "data": "number", "orderable": true }
         ],
         "responsive": true
     });
@@ -191,18 +178,19 @@
     $('#coSponsoredBillTable').DataTable({
         "processing": true, // Enable processing indicator
         "serverSide": true,
+        "searching": true,
         "ajax": {
             "url": "@Url.Action("GetCoSponsoredLegislations", "Legislation")",
-            "type": "GET",
+            "type": "POST",
             "datatype": "json",
             "data": {
                 "memberId": memberId
             },
         },
         "columns": [
-            { "data": "title" },
-            { "data": "type" },
-            { "data": "number" }
+            { "data": "title", "orderable": true },
+            { "data": "type", "orderable": true },
+            { "data": "number", "orderable": true }
         ],
         "responsive": true
     });
@@ -211,19 +199,40 @@
     $('#votesTable').DataTable({
         "processing": true, // Enable processing indicator
         "serverSide": true,
+        "searching": true,
         "ajax": {
             "url": "@Url.Action("GetBillVotes", "LegislationVote")",
-            "type": "GET",
+            "type": "POST",
             "datatype": "json",
             "data": {
                 "memberId": memberId
             },
         },
         "columns": [
-            { "data": "title" },
-            { "data": "yes" },
-            { "data": "no" },
-            { "data": "notVoting" }
+            { "data": "title", "orderable": true },
+            { "data": "yes", "orderable": true },
+            { "data": "no", "orderable": true },
+            { "data": "notVoting", "orderable": true }
+        ],
+        "responsive": true
+    });
+
+    $('#scoreCardTable').DataTable({
+        "processing": true, // Enable processing indicator
+        "serverSide": true,
+        "searching": true,
+        "ajax": {
+            "url": "@Url.Action("GetscoreCards", "ScoreCard")",
+            "type": "POST",
+            "datatype": "json",
+            "data": {
+                "memberId": memberId
+            },
+        },
+        "columns": [
+            { "data": "subject", "orderable": true },
+            { "data": "score", "orderable": true },
+            { "data": "comment", "orderable": true }
         ],
         "responsive": true
     });

@@ -1,19 +1,21 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using PollDancingLibrary.Data;
 using PollDancingLibrary.DTOs;
+using PollDancingLibrary.Models;
 using System.Net.Http;
 using System.Text.Json;
 
 namespace PollDancingWeb.Controllers
 {
-    public class RepresentativeController : Controller
+    public class ScoreCardController : Controller
     {
-        private readonly ILogger<RepresentativeController> _logger;
+        private readonly ILogger<ScoreCardController> _logger;
         private readonly CongressDbContext _congressDbContext;
         private readonly IHttpClientFactory _httpClientFactory;
 
-        public RepresentativeController(ILogger<RepresentativeController> logger, CongressDbContext dbContext, IHttpClientFactory httpClientFactory)
+        public ScoreCardController(ILogger<ScoreCardController> logger, CongressDbContext dbContext, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _congressDbContext = dbContext;
@@ -26,57 +28,39 @@ namespace PollDancingWeb.Controllers
         }
 
 
-        public async Task<ActionResult> GetMembersAsync(int draw = 1, int length = 10, int start = 1)
+        public async Task<ActionResult> GetScoreCards(int draw = 1, int length = 10, int start = 1, int memberId=0)
         {
             try
             {
-                _logger.LogInformation("Get senators list.");
+                _logger.LogInformation($"Get all score cards of {memberId}.");
 
                 start = start / length + 1;
 
                 HttpClient client = _httpClientFactory.CreateClient();
-                string search = Request.Form["search[value]"].FirstOrDefault().ToLower().Trim();
-
-                string apiUrl = $"http://localhost:5184/api/representative/getall?page={start}";
-
-                if (!string.IsNullOrEmpty(search))
-                {
-                    apiUrl += $"&search={search}";
-                }
-                
+                string apiUrl = $"http://localhost:5184/api/scorecard/getscorecards/{memberId}"; // Adjust the URL as needed
+                var search = Request.Form["search[value]"].FirstOrDefault().ToLower().Trim();
 
                 var response = await client.GetAsync(apiUrl);
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<List<RepresentativeDTO>>(content);
+                    var result = JsonSerializer.Deserialize<List<ScoreCardDTO>>(content);
 
-                    var data = result.Select(member => new
+                    var data = result.Select(sc => new
                     {
-                        Id = member.Id,
-                        BioguideId = member.BioguideId,
-                        Name = member.Name,
-                        State = member.State,
-                        PartyName = member.PartyName,
-                        UpdateDate = member.UpdateDate,
-                        District = member.District,
-                        Image = member.Image
+                        Subject = sc.Subject,
+                        Score = sc.Score,
+                        Comment = sc.Comment
                     }).ToList();
 
-                    HttpClient httpClient = _httpClientFactory.CreateClient();
-                    string apiCountUrl = $"http://localhost:5184/api/representative/getcount"; // Adjust the URL as needed
-                    int totalRecords = 0;
-
-                    var responseCount = await client.GetAsync(apiCountUrl);
-                    if (responseCount.IsSuccessStatusCode)
-                    {
-                        totalRecords = int.Parse(await responseCount.Content.ReadAsStringAsync());
-                    }
-
+                    int totalRecords = data.Count();
+                    int skip = (start - 1) * length;
+                    data = data.Skip(skip).Take(length).ToList();  
+                    
                     int filterRecords = totalRecords;
                     if (!string.IsNullOrEmpty(search))
                     {
-                        data = data.Where(x => x.Name.ToLower().Contains(search)).ToList();
+                        data = data.Where(x => x.Subject.ToLower().Contains(search)).ToList();
                         filterRecords = data.Count();
                     }
 
@@ -97,34 +81,6 @@ namespace PollDancingWeb.Controllers
             }
         }
 
-        // GET: RepresentativeController/Details/5
-        public async Task<ActionResult> DetailsAsync(int id)
-        {
-            try
-            {
-                _logger.LogInformation("Get representative details.");
-
-                HttpClient client = _httpClientFactory.CreateClient();
-                string apiUrl = $"http://localhost:5184/api/representative/{id}"; // Adjust the URL as needed
-
-                var response = await client.GetAsync(apiUrl);
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<RepresentativeDTO>(content);
-
-                    return View("RepresentativeDetails", result);
-                }
-
-                return Json(new { error = "Failed to fetch data from API" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                _logger.LogError(ex.StackTrace);
-                return Json(new { error = ex.Message });
-            }
-        }
 
         // GET: RepresentativeController/Create
         public ActionResult Create()
